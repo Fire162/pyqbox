@@ -173,30 +173,48 @@ def get_chapter_question_urls(chapter_url, session=None):
         urls.append(full_url)
     return urls
 
-def get_all_chapters(session=None):
-    html = fetch_html(f"{BASE_URL}/jee/", session=session)
-    if not html:
-        return []
-
-    soup = BeautifulSoup(html, PARSER)
+def get_all_chapters(exam='all', session=None):
     chapters = []
-
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        m = re.match(r'^/jee/(main|advanced)/([^/]+)/([^/]+)/?$', href)
-        if m:
-            exam, subject, chapter_slug = m.groups()
-            if subject == 'papers' or chapter_slug.startswith('#'):
-                continue
-            chapter_name = a.get_text(strip=True)
-            full_url = urllib.parse.urljoin(BASE_URL, href)
-            chapters.append({
-                'url': full_url,
-                'exam': exam,
-                'subject': subject,
-                'chapter': chapter_slug,
-                'chapter_name': chapter_name
-            })
+    if exam == 'neet':
+        html = fetch_html(f"{BASE_URL}/neet/", session=session)
+        if html:
+            soup = BeautifulSoup(html, PARSER)
+            for a in soup.find_all('a', href=True):
+                href = a['href']
+                m = re.match(r'^/neet/([^/]+)/([^/]+)/?$', href)
+                if m:
+                    subject, chapter_slug = m.groups()
+                    if subject == 'papers' or chapter_slug.startswith('#'):
+                        continue
+                    chapter_name = a.get_text(strip=True)
+                    full_url = urllib.parse.urljoin(BASE_URL, href)
+                    chapters.append({
+                        'url': full_url,
+                        'exam': 'neet',
+                        'subject': subject,
+                        'chapter': chapter_slug,
+                        'chapter_name': chapter_name
+                    })
+    else:
+        html = fetch_html(f"{BASE_URL}/jee/", session=session)
+        if html:
+            soup = BeautifulSoup(html, PARSER)
+            for a in soup.find_all('a', href=True):
+                href = a['href']
+                m = re.match(r'^/jee/(main|advanced)/([^/]+)/([^/]+)/?$', href)
+                if m:
+                    exam_type, subject, chapter_slug = m.groups()
+                    if subject == 'papers' or chapter_slug.startswith('#'):
+                        continue
+                    chapter_name = a.get_text(strip=True)
+                    full_url = urllib.parse.urljoin(BASE_URL, href)
+                    chapters.append({
+                        'url': full_url,
+                        'exam': exam_type,
+                        'subject': subject,
+                        'chapter': chapter_slug,
+                        'chapter_name': chapter_name
+                    })
 
     unique_chapters = {c['url']: c for c in chapters}.values()
     return list(unique_chapters)
@@ -206,6 +224,8 @@ def get_output_paths(exam):
         prefix = 'jee_mains'
     elif exam == 'advanced':
         prefix = 'jee_adv'
+    elif exam == 'neet':
+        prefix = 'neet'
     else:
         prefix = 'all_jee_pyqs'
     return os.path.join(OUTPUT_DIR, f"{prefix}.jsonl"), os.path.join(OUTPUT_DIR, f"{prefix}.json")
@@ -278,9 +298,10 @@ def load_existing_scraped_keys(jsonl_path, json_path):
 def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None):
     session = create_session(pool_size=workers * 2)
 
-    print("[1/3] Scraping chapter list...")
-    chapters = get_all_chapters(session=session)
-    print(f"Found {len(chapters)} chapters across JEE Main and Advanced.")
+    exam_label = exam.upper()
+    print(f"[1/3] Scraping chapter list for {exam_label}...")
+    chapters = get_all_chapters(exam=exam, session=session)
+    print(f"Found {len(chapters)} chapters for {exam_label}.")
 
     if exam in ('main', 'advanced'):
         chapters = [c for c in chapters if c['exam'] == exam]
@@ -364,9 +385,9 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
     print("Done!")
 
 def main():
-    parser = argparse.ArgumentParser(description="High-Speed Scraper for JEE Main & Advanced PYQs")
+    parser = argparse.ArgumentParser(description="High-Speed Scraper for JEE & NEET PYQs from Pyqbox.com")
     parser.add_argument("--workers", type=int, default=25, help="Number of concurrent worker threads (default: 25)")
-    parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'all'], default='all', help="Filter by exam (default: all)")
+    parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'neet', 'all'], default='all', help="Filter by exam: main, advanced, neet, all (default: all)")
     parser.add_argument("--limit-chapters", type=int, default=None, help="Limit number of chapters to process (for testing)")
     parser.add_argument("--limit-questions", type=int, default=None, help="Limit number of questions to process (for testing)")
     parser.add_argument("--export-json", action="store_true", help="Export existing JSONL to JSON without scraping")
