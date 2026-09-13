@@ -25,22 +25,36 @@ def extract_middle_latex(s):
     if not cleaned:
         return ""
     
+    # If string already has balanced \( ... \) with other text or multiple spans
+    if r'\(' in cleaned and r'\)' in cleaned:
+        if not (cleaned.startswith(r'\(') and cleaned.endswith(r'\)') and cleaned.count(r'\(') == 1):
+            return cleaned
+
+    # Strip accidental outer wrapper \( ... \) if it wraps the whole string
+    if cleaned.startswith(r'\(') and cleaned.endswith(r'\)'):
+        inner = cleaned[2:-2].strip()
+        if r'\(' not in inner and r'\)' not in inner:
+            cleaned = inner
+        else:
+            return cleaned
+
     if '\\' not in cleaned and '_' not in cleaned and '^' not in cleaned:
         return cleaned
 
-    # Known multi-letter triplet patterns e.g. "Both ( A ) (\mathrm{A}) ( A )"
-    cleaned = re.sub(r'\( ([A-Za-z0-9]+) \) \(\\mathrm\{([A-Za-z0-9]+)\}\) \( \1 \)', r'(\2)', cleaned)
-    
-    anchors = [m.start() for m in re.finditer(r'(\\[a-zA-Z]+|_[0-9a-zA-Z{]|\^[0-9a-zA-Z{]|\\%|\\rightarrow)', cleaned)]
+    cleaned = re.sub(r'\(\s*([A-Za-z0-9]+)\s*\)\s*\(\\mathrm\{([A-Za-z0-9]+)\}\)\s*\(\s*\1\s*\)', r'(\2)', cleaned)
+    cleaned = re.sub(r'\(\s*([A-Za-z0-9]+)\s*\\mathrm\{([A-Za-z0-9]+)\}\s*\1\s*\)', r'(\2)', cleaned)
+    cleaned = re.sub(r'\b([A-Za-z0-9]+)\s*\\mathrm\{([A-Za-z0-9]+)\}\s*\1\b', r'\2', cleaned)
+
+    anchors = list(re.finditer(r'(\\[a-zA-Z]+|_[0-9a-zA-Z{]|\^[0-9a-zA-Z{]|\\%|\\rightarrow)', cleaned))
     if not anchors:
         return cleaned
         
-    first_anchor = anchors[0]
-    last_anchor = anchors[-1]
+    first_anchor = anchors[0].start()
+    last_anchor = anchors[-1].end()
 
     # Search for matching prefix and suffix
     for i in range(first_anchor, -1, -1):
-        for j in range(len(cleaned), last_anchor, -1):
+        for j in range(len(cleaned), last_anchor - 1, -1):
             prefix = cleaned[:i].strip()
             middle = cleaned[i:j].strip()
             suffix = cleaned[j:].strip()
@@ -48,15 +62,18 @@ def extract_middle_latex(s):
             if not prefix and not suffix:
                 continue
             
-            norm_p = re.sub(r'\s+', '', prefix)
-            norm_s = re.sub(r'\s+', '', suffix)
+            norm_p = re.sub(r'[\s\u200b\ue020\.\,]+', '', prefix).replace('−', '-').replace('–', '-')
+            norm_s = re.sub(r'[\s\u200b\ue020\.\,]+', '', suffix).replace('−', '-').replace('–', '-')
             
             if norm_p and norm_s and (norm_p == norm_s or sorted(norm_p) == sorted(norm_s)):
                 return f"\\({middle}\\)"
 
-    # Fallback if no matching prefix/suffix found:
-    if ('\\' in cleaned or '_' in cleaned or '^' in cleaned) and not cleaned.startswith('\\('):
-        return f"\\({cleaned}\\)"
+    # Fallback: only wrap if not looking like an English sentence with spaces/words
+    words = cleaned.split()
+    has_english_words = any(w.lower() in {'is', 'an', 'the', 'are', 'both', 'and', 'not', 'correct', 'true', 'false', 'statement', 'reaction', 'only', 'neither'} for w in words)
+    if not has_english_words:
+        if not cleaned.startswith(r'\(') and not cleaned.endswith(r'\)'):
+            return f"\\({cleaned}\\)"
     return cleaned
 
 @app.template_filter('clean_math')
