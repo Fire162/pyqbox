@@ -10,6 +10,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
+try:
+    import lxml
+    PARSER = 'lxml'
+except ImportError:
+    PARSER = 'html.parser'
 
 BASE_URL = "https://pyqbox.com"
 OUTPUT_DIR = "pyqbox_data"
@@ -89,7 +94,7 @@ def parse_question_page(q_url, chapter_meta, session=None):
     if not html:
         return None
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, PARSER)
     art = soup.find('article')
     if not art:
         return None
@@ -157,7 +162,7 @@ def get_chapter_question_urls(chapter_url, session=None):
     if not html:
         return []
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, PARSER)
     qindex = soup.find('ol', class_='qindex-list')
     if not qindex:
         return []
@@ -173,7 +178,7 @@ def get_all_chapters(session=None):
     if not html:
         return []
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, PARSER)
     chapters = []
 
     for a in soup.find_all('a', href=True):
