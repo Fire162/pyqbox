@@ -1,0 +1,1325 @@
+/* PYQBox â a practice tool.
+ *
+ * Design language follows Notion's PRODUCT surface, not its marketing site:
+ * warm neutral ground, hairline borders, no shadows by default, small radii,
+ * hierarchy carried by size and weight rather than colour, 4px spacing base.
+ *
+ * The previous pass here was a landing page â gradient hero, stat counters,
+ * pastel feature tiles, 20px radii. That is a pitch. A practice tool opens on
+ * the work, so colour is functional only: subject, correct, wrong, current.
+ *
+ * One accent: the app's teal. It never decorates, only indicates.
+ */
+
+@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;
+  src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-style:normal;font-weight:500;font-display:swap;
+  src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:swap;
+  src:url(https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files/inter-latin-600-normal.woff2) format('woff2')}
+
+/* ---------------------------------------------------------------- tokens -- */
+:root{
+  /* Warm neutrals â Notion's canvas/surface/hairline, not blue-grey slate. */
+  --canvas:#ffffff;
+  --surface:#f7f6f3;
+  --surface-2:#f1f0ed;
+  --hairline:#e9e8e4;
+  --hairline-strong:#dcdad4;
+
+  /* Notion's own muted greys are lighter than this (#787671, #a4a097) and do
+     not clear 4.5:1 â a known criticism of it. Both tiers here are measured
+     against all three light grounds, worst case 4.55:1 on surface-2. */
+  --ink:#37352f;          /* Notion charcoal â body text */
+  --ink-2:#5f5d57;        /* secondary  â 5.78 worst case */
+  --ink-3:#6f6d65;        /* muted      â 4.55 worst case */
+
+  /* The one accent. --accent fills; --accent-ink is text-safe on canvas. */
+  --accent:#00b894;
+  --accent-ink:#0a7a63;
+  --accent-wash:#eaf8f4;
+
+  --blue:#0075de;--blue-ink:#0060b8;--blue-wash:#eaf3fc;
+  --green:#1aae39;--green-ink:#157f2c;--green-wash:#e9f7ec;
+  --red:#e03131;--red-ink:#b32626;--red-wash:#fdecec;
+  --amber:#dd8500;--amber-ink:#8a5300;--amber-wash:#fdf3e3;
+  /* Marked for review, and nothing else. The real exam screens use purple for
+     it and candidates read that square by colour long before they read the
+     legend, so this is the one place the palette copies rather than chooses.
+     --purple-on is the ink that goes ON the fill: white clears 5.9:1 on the
+     light purple but only 3.1 on the lighter dark-theme one, so unlike green
+     and red â whose fills are close enough in both themes for one hardcoded
+     ink â this pair has to flip. */
+  --purple:#7048e8;--purple-ink:#5a35c9;--purple-wash:#f0ebfd;--purple-on:#ffffff;
+
+  --radius-xs:3px;--radius-sm:4px;--radius:6px;--radius-lg:8px;
+  --shadow-pop:0 4px 12px rgba(15,15,15,.08);
+
+  --sidebar-w:248px;
+
+  /* What the BROWSER paints, as opposed to what we paint: scrollbars, the
+     canvas behind the page, and every native control â the file input on
+     /progress/, the search field's clear button, checkboxes, focus rings.
+     Set it and they follow the theme; leave it and they follow the OS.
+     `<meta name="color-scheme" content="light dark">` in the head says this
+     page does both, which is right before the stylesheet arrives and wrong
+     afterwards: it hands the choice to the OS, and the OS does not know the
+     reader pinned Light. A dark desktop then put a dark scrollbar down the
+     side of a white page â visible on every table that scrolls, the chapter
+     stats block most of all.
+     So it is declared here, in all three theme states, exactly parallel to
+     the tokens above, and the property beats the meta wherever they differ. */
+  color-scheme: light;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --canvas:#191919;
+  --surface:#202020;
+  --surface-2:#2a2a2a;
+  --hairline:#2f2f2f;
+  --hairline-strong:#3d3d3d;
+
+  /* ink-3 measured against all three dark grounds â canvas #191919, sidebar
+     surface #202020 and surface-2 #2a2a2a â worst case 4.73:1. Notion's own
+     #83817c fails at 4.19 on the sidebar, where most of the muted text is. */
+  --ink:#d4d4d4;
+  --ink-2:#adaba6;
+  --ink-3:#96948e;
+
+  --accent:#00d4aa;--accent-ink:#2fd9b4;--accent-wash:rgba(0,212,170,.12);
+
+  --blue:#4a9eff;--blue-ink:#6cb2ff;--blue-wash:rgba(74,158,255,.13);
+  --green:#4ac26b;--green-ink:#5fd07e;--green-wash:rgba(74,194,107,.13);
+  --red:#ff6b6b;--red-ink:#ff8585;--red-wash:rgba(255,107,107,.13);
+  --amber:#e5a13a;--amber-ink:#f0b657;--amber-wash:rgba(229,161,58,.13);
+  --purple:#9775fa;--purple-ink:#b197fc;--purple-wash:rgba(151,117,250,.15);--purple-on:#1a0f38;
+
+  --shadow-pop:0 4px 12px rgba(0,0,0,.5);
+
+  color-scheme: dark;
+}}
+
+/* The same dark palette again, this time for an explicit choice rather than an
+   OS preference. Three states: no attribute follows the OS, [data-theme=light]
+   pins light (and is excluded from the media query above), [data-theme=dark]
+   pins dark even when the OS asks for light. Duplicated on purpose â a token
+   defined only inside a media query cannot be reached by the toggle. */
+:root[data-theme=dark]{
+  --canvas:#191919;
+  --surface:#202020;
+  --surface-2:#2a2a2a;
+  --hairline:#2f2f2f;
+  --hairline-strong:#3d3d3d;
+
+  --ink:#d4d4d4;
+  --ink-2:#adaba6;
+  --ink-3:#96948e;
+
+  --accent:#00d4aa;--accent-ink:#2fd9b4;--accent-wash:rgba(0,212,170,.12);
+
+  --blue:#4a9eff;--blue-ink:#6cb2ff;--blue-wash:rgba(74,158,255,.13);
+  --green:#4ac26b;--green-ink:#5fd07e;--green-wash:rgba(74,194,107,.13);
+  --red:#ff6b6b;--red-ink:#ff8585;--red-wash:rgba(255,107,107,.13);
+  --amber:#e5a13a;--amber-ink:#f0b657;--amber-wash:rgba(229,161,58,.13);
+  --purple:#9775fa;--purple-ink:#b197fc;--purple-wash:rgba(151,117,250,.15);--purple-on:#1a0f38;
+
+  --shadow-pop:0 4px 12px rgba(0,0,0,.5);
+
+  color-scheme: dark;
+}
+
+/* The UA's `[hidden]{display:none}` is an attribute selector, so it carries the
+   same specificity as a class and loses to any later `.thing{display:flex}`.
+   Every element app.js toggles `hidden` on was therefore rendering anyway â
+   the storage notice, the resume line, the verdict, the per-question timer,
+   the mistake-reason block, and the navigator squares a filter had excluded.
+   The list of exceptions here used to be maintained by hand, one class at a
+   time, and lost its `display:none` in an edit. One rule instead. */
+[hidden]{display:none !important}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);
+  font:400 16px/1.55 Inter,-apple-system,system-ui,'Segoe UI',Helvetica,sans-serif;
+  -webkit-font-smoothing:antialiased}
+
+a{color:inherit}
+:where(a,button,input,select,summary,label[for]):focus-visible{
+  outline:2px solid var(--accent);outline-offset:1px;border-radius:var(--radius-sm)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{
+  animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* --------------------------------------------------------------- layout -- *
+ * Sidebar is the product's spine, as in Notion: it is always there, it is
+ * quiet, and it is how you get anywhere. Collapses below 900px.
+ */
+.app{display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr);
+  min-height:100vh;align-items:start}
+/* The hub has no sidebar: nothing in it means anything before an exam family
+   has been picked, and a landing page carrying one arbitrary exam's chapter
+   list would be worse than one carrying none.
+
+   It is a workspace home in the Notion sense, not a pitch â where you left off,
+   then what there is, with quick find over the lot. Same rows, same hairlines,
+   same accents as every other page; no hero, no tiles, no counters. */
+.app.hub{grid-template-columns:1fr}
+.app.hub .page{max-width:620px;padding-top:64px}
+.app.hub .sb-brand{padding-left:0;margin-bottom:26px}
+.app.hub h1{font-size:26px}
+.app.hub .sub{margin-bottom:24px}
+.app.hub section,.app.hub #hub-browse{margin-top:26px}
+.app.hub .side-h{margin-bottom:7px}
+.app.hub footer{margin-top:34px}
+.app.hub .sub.empty{margin:10px 2px 0}
+
+/* A family's subjects, as the accent dots the rest of the site already uses.
+   Enough to tell JEE from SSC at a glance without inventing a second palette. */
+.dots{display:flex;gap:3px;flex:none}
+.dots .dot{width:7px;height:7px;border-radius:50%;background:var(--acc,var(--ink-3))}
+
+/* Exams nested under their family. Notion's toggle list: the summary IS the
+   row, and the disclosure marker is replaced by the chevron already in it. */
+.rows.tree>li+li{border-top:1px solid var(--hairline)}
+.rows.tree summary{cursor:pointer;list-style:none}
+.rows.tree summary::-webkit-details-marker{display:none}
+/* The chevron already in the row IS the disclosure marker â it points right
+   when shut and down when open. Targets .ic, not .chev: every chevron on the
+   site is svg.ic, and the .row .chev rule above it matches nothing. */
+.rows.tree summary .meta .ic{transition:transform .12s}
+.rows.tree details[open] summary .meta .ic{transform:rotate(90deg)}
+.rows.nested{border:none;border-radius:0;margin:0 0 6px;
+  padding-left:20px;background:none}
+.rows.nested li+li{border-top:none}
+.rows.nested .row{padding:6px 12px}
+.rows.nested .t{font-weight:400;color:var(--ink-2)}
+.rows.nested .row:hover .t{color:var(--ink)}
+.rows.nested .t.muted{color:var(--ink-3);font-size:13.5px}
+
+.hub-foot{margin-top:30px;display:flex}
+.hub-foot .sb-theme{margin:0}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;
+  background:var(--surface);border-right:1px solid var(--hairline);
+  padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.content{min-width:0;padding:0 0 96px}
+/* --pad is the page's own gutter, named so the working strip can bleed back
+   out to the page edges without the two drifting apart. */
+.page{--pad:40px;max-width:900px;margin:0 auto;padding:28px var(--pad) 0}
+.page.wide{max-width:var(--measure-wide,1180px)}
+
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;
+    border-bottom:1px solid var(--hairline);flex-direction:row;
+    flex-wrap:wrap;align-items:center;gap:4px;padding:8px}
+  .sb-section,.sb-brand .sub{display:none}
+  .sb-exam{margin:0;flex:1 1 220px}
+  .page{--pad:18px;padding:20px var(--pad) 0}
+}
+
+/* Sidebar bits */
+.sb-top{display:flex;align-items:center}
+.sb-top .sb-brand{flex:1;min-width:0}
+.sb-toggle{flex:none;background:none;border:none;cursor:pointer;display:flex;
+  padding:5px;margin-bottom:4px;border-radius:var(--radius-sm);
+  color:var(--ink-3);line-height:0}
+.sb-toggle:hover{background:var(--surface-2);color:var(--ink-2)}
+
+/* Minimised, on screens where the sidebar is a column at all. Below 900px it
+   is already a horizontal bar across the top and there is nothing to reclaim,
+   so none of this applies there and the button itself is hidden.
+
+   The rail keeps the mark â it is the way home, and an empty 52px strip reads
+   as breakage rather than as a collapsed panel. */
+@media(min-width:901px){
+  :root[data-sb=min] .app{--sidebar-w:52px}
+  :root[data-sb=min] .sidebar{padding:10px 6px;overflow:visible}
+  :root[data-sb=min] .sidebar>:not(.sb-top){display:none}
+  :root[data-sb=min] .sb-top{flex-direction:column;gap:2px}
+  :root[data-sb=min] .sb-brand{padding:6px 0 4px;justify-content:center}
+  :root[data-sb=min] .sb-brand .name{display:none}
+  :root[data-sb=min] .sb-toggle{transform:rotate(180deg)}
+  /* Hand the reclaimed 196px to the work rather than to the margins. */
+  :root[data-sb=min] .page.wide{--measure-wide:1376px}
+}
+/* On the phone the sidebar is a wrapped row, and wrapped to 256px of it â a
+   third of the screen spent on navigation before the question. Clamped to its
+   first row instead, which leaves the mark, the exam tabs and the toggle; the
+   rest is one tap away and stays open once asked for.
+
+   max-height rather than display:none on the children, because those children
+   are variously flex, grid and block and there is no one value to restore them
+   to. Nothing is removed from the DOM, so the links stay crawlable. */
+@media(max-width:900px){
+  .sb-toggle{display:flex;margin-bottom:0;margin-left:auto}
+  /* The brand row takes the full width so the clamp always lands on a row of
+     known height. Sharing row one with the exam switcher made that height
+     depend on how many exams the bank has â six SSC tabs wrap to 95px, which
+     pushed the toggle itself below the clamp and left no way to open the nav
+     at all. */
+  .sb-top{flex:1 0 100%}
+  .sidebar{max-height:56px;overflow:hidden}
+  :root[data-nav=open] .sidebar{max-height:none;overflow:visible}
+  :root[data-nav=open] .sb-toggle{transform:rotate(180deg)}
+}
+
+.sb-brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;
+  text-decoration:none;color:var(--ink)}
+.sb-brand .mark{width:22px;height:22px;border-radius:var(--radius-sm);flex:none;
+  background:var(--accent);color:#04231d;font-weight:600;font-size:10px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+.sb-brand .name{font-weight:600;font-size:14px;letter-spacing:-.01em}
+.sb-section{font-size:11px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);padding:14px 8px 4px}
+.sb-link{display:flex;align-items:center;gap:8px;padding:5px 8px;
+  border-radius:var(--radius-sm);text-decoration:none;color:var(--ink-2);
+  font-size:14px;font-weight:500;line-height:1.4}
+.sb-link:hover{background:var(--surface-2);color:var(--ink)}
+.sb-link[aria-current]{background:var(--surface-2);color:var(--ink);font-weight:600}
+.sb-link .ic{flex:none;width:16px;height:16px;color:var(--ink-3)}
+.sb-link[aria-current] .ic{color:var(--accent-ink)}
+.sb-link .n{margin-left:auto;font-size:12px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+/* Subject selection, vertical. The app puts Phy/Chem/Math in a horizontal tab
+   strip; in a sidebar the same choice reads better stacked, and it leaves room
+   for the count. Indented under Chapters to show it narrows that. */
+.sb-sub{display:flex;align-items:center;gap:8px;padding:4px 8px 4px 30px;
+  border-radius:var(--radius-sm);text-decoration:none;color:var(--ink-2);
+  font-size:13px;font-weight:500;line-height:1.4}
+.sb-sub:hover{background:var(--surface-2);color:var(--ink)}
+.sb-sub[aria-current]{background:var(--surface-2);color:var(--ink);font-weight:600}
+.sb-sub .dot{width:6px;height:6px;border-radius:50%;flex:none;
+  background:var(--acc,var(--ink-3))}
+.sb-sub .n{margin-left:auto;font-size:11.5px;font-weight:400;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+@media(max-width:900px){.sb-sub{padding-left:8px}}
+
+/* Exam switcher. A grid rather than a flex row because the number of tabs is
+   set by the bank: two for JEE, six for SSC. auto-fit keeps JEE on one row of
+   two wide tabs, and wraps SSC to three columns over two rows rather than
+   crushing "CHSL" into 33px. */
+.sb-exam{display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));
+  gap:2px;background:var(--surface-2);border-radius:var(--radius);
+  padding:2px;margin:4px 6px 2px}
+.sb-exam a{text-align:center;padding:5px 4px;border-radius:var(--radius-sm);
+  font-size:12.5px;font-weight:500;text-decoration:none;color:var(--ink-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-exam a[aria-current]{background:var(--canvas);color:var(--ink);font-weight:600}
+/* The way back to the hub. Spans the row under the exam tabs rather than
+   sitting among them â it is a different kind of destination, and at six tabs
+   there is no seventh slot for it anyway. */
+.sb-exam a.all{grid-column:1/-1;color:var(--ink-3);font-size:11.5px}
+.sb-exam a.all:hover{color:var(--ink-2)}
+
+/* Appearance switch. Sits at the foot of the sidebar, pushed down by margin
+   auto so it stays out of the way of navigation. */
+.sb-foot{margin-top:auto;padding-top:14px}
+.sb-theme{display:flex;gap:2px;background:var(--surface-2);
+  border-radius:var(--radius);padding:2px;margin:0 6px}
+.sb-theme button{flex:1;font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;
+  border:none;background:none;color:var(--ink-2);
+  padding:5px 4px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;gap:4px}
+.sb-theme button:hover{color:var(--ink)}
+.sb-theme button[aria-pressed=true]{background:var(--canvas);color:var(--ink);font-weight:600}
+.sb-theme .ic{width:13px;height:13px}
+@media(max-width:900px){.sb-foot{margin-top:0;padding-top:0;margin-left:auto}
+  .sb-theme{margin:0}}
+
+/* ----------------------------------------------------------------- type -- */
+h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;font-weight:600;margin:0 0 6px}
+h2{font-size:18px;line-height:1.3;letter-spacing:-.01em;font-weight:600;margin:32px 0 10px}
+h2:first-child{margin-top:0}
+h3{font-size:15px;font-weight:600;margin:20px 0 8px}
+p{margin:0 0 12px}
+.sub{color:var(--ink-2);font-size:14px;margin:0 0 20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 8px}
+.crumbs{font-size:13px;color:var(--ink-3);margin:0 0 14px}
+.crumbs a{color:var(--ink-2);text-decoration:none}
+.crumbs a:hover{color:var(--ink);text-decoration:underline}
+
+/* --------------------------------------------------------------- search -- */
+.search{position:relative;margin:0 0 22px}
+.search input{width:100%;font:inherit;font-size:15px;color:var(--ink);
+  background:var(--canvas);border:1px solid var(--hairline-strong);
+  border-radius:var(--radius);padding:9px 12px 9px 34px;height:40px}
+.search input::placeholder{color:var(--ink-3)}
+.search input:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent)}
+.search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:var(--ink-3);pointer-events:none}
+
+/* ------------------------------------------------------------- surfaces -- *
+ * Notion default: hairline border, no shadow, small radius.
+ */
+.card{background:var(--canvas);border:1px solid var(--hairline);
+  border-radius:var(--radius-lg);padding:16px}
+.panel{background:var(--surface);border-radius:var(--radius-lg);padding:14px 16px}
+
+/* Year selector, above the papers it filters. The app makes picking a year a
+   whole screen of cards; here it is one row that filters in place, so the
+   years stay visible and picking one does not lose your position. */
+.years{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 22px}
+.year{font:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-2);
+  padding:5px 11px;border-radius:var(--radius);border:1px solid var(--hairline-strong);
+  font-variant-numeric:tabular-nums;background:var(--canvas)}
+.year:hover{background:var(--surface);color:var(--ink);border-color:var(--ink-3)}
+.year.on{background:var(--accent);border-color:var(--accent);
+  color:#04231d;font-weight:600}
+.group[hidden]{display:none}
+
+/* Group heading inside a list â subject within an exam, year within papers.
+   Lighter than an h2 so the exam/section heading above it still leads. */
+.group-h{display:flex;align-items:center;gap:8px;margin:20px 0 7px;
+  font-size:13px;font-weight:600;color:var(--ink-2)}
+.group-h .dot{width:7px;height:7px;border-radius:50%;flex:none;
+  background:var(--acc,var(--ink-3))}
+/* A linked heading stays a heading: the colour and weight are the section
+   label's, and only the underline on hover says it is clickable. */
+.group-h a{color:inherit;text-decoration:none}
+.group-h a:hover{text-decoration:underline}
+.group-h .n{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+
+/* Row list â the workhorse. Dense, hairline-separated, hover-highlighted. */
+.rows{list-style:none;margin:0;padding:0;
+  border:1px solid var(--hairline);border-radius:var(--radius-lg);overflow:hidden}
+.rows li+li{border-top:1px solid var(--hairline)}
+.row{display:flex;align-items:center;gap:10px;padding:9px 12px;
+  text-decoration:none;color:var(--ink);font-size:14.5px;background:var(--canvas)}
+.row:hover{background:var(--surface)}
+.row .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--acc,var(--ink-3))}
+.row .t{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{margin-left:auto;flex:none;color:var(--ink-3);font-size:12.5px;
+  font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:10px}
+.row .chev{color:var(--ink-3);flex:none;opacity:0;transition:opacity .1s}
+.row:hover .chev{opacity:1}
+.row.is-done .t{color:var(--ink-3)}
+
+/* Count pill */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:500;
+  padding:2px 7px;border-radius:var(--radius-sm);background:var(--surface-2);
+  color:var(--ink-2);font-variant-numeric:tabular-nums}
+.pill.a{background:var(--accent-wash);color:var(--accent-ink)}
+.pill.g{background:var(--green-wash);color:var(--green-ink)}
+.pill.r{background:var(--red-wash);color:var(--red-ink)}
+.pill.b{background:var(--blue-wash);color:var(--blue-ink)}
+.pill.y{background:var(--amber-wash);color:var(--amber-ink)}
+
+/* Stat strip â numbers, not cards. */
+.stats{display:flex;gap:28px;flex-wrap:wrap;list-style:none;padding:0;margin:0 0 24px}
+.stats li{display:flex;flex-direction:column;gap:1px}
+.stats .v{font-size:22px;font-weight:600;line-height:1.15;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.stats .k{font-size:12px;color:var(--ink-3)}
+.stats .v.g{color:var(--green-ink)}
+.stats .v.a{color:var(--accent-ink)}
+
+/* Buttons */
+.btn{font:inherit;font-size:14px;font-weight:500;line-height:1.3;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:0 14px;height:34px;border-radius:var(--radius);
+  background:var(--canvas);color:var(--ink);border:1px solid var(--hairline-strong)}
+.btn:hover:not(:disabled){background:var(--surface)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#04231d;font-weight:600}
+.btn.primary:hover:not(:disabled){filter:brightness(.96);background:var(--accent)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn.ghost:hover:not(:disabled){background:var(--surface-2);color:var(--ink)}
+.btn.sm{height:28px;font-size:13px;padding:0 10px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Tabs (underline) */
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--hairline);margin:0 0 18px}
+.tabs a,.tabs button{font:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  background:none;border:none;color:var(--ink-2);text-decoration:none;
+  padding:0 0 9px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a[aria-current],.tabs button[aria-selected=true]{
+  color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+
+/* Empty state */
+.empty{text-align:center;padding:44px 20px;color:var(--ink-3);font-size:14px}
+.empty .big{font-size:15px;color:var(--ink-2);font-weight:500;margin-bottom:4px}
+
+/* The one action on a chapter page. Everything else there is reading; this is
+   the thing you came to do, so it gets the accent and the larger control. The
+   count beside it is filled in by app.js when there is progress to report,
+   which is what turns "Start practising" into "carry on from 38". */
+.ch-start{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:22px 0 8px}
+.ch-start-n{font-size:13.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ch-start-n b{font-weight:600;color:var(--ink)}
+/* Pushed to the far end, away from "Start practising": it appears only once
+   there is progress to lose, and it should never be the button next to the
+   one you meant to press. */
+.ch-reset{margin-left:auto;display:flex;align-items:center;gap:6px}
+.btn.danger{border-color:var(--red);background:var(--red-wash);color:var(--red-ink)}
+.btn.danger:hover:not(:disabled){background:var(--red);color:#fff}
+
+/* --------------------------------------------------------- working strip -- *
+ * The page header â crumbs, h1, sub, lede â is what someone arriving cold
+ * reads and what a crawler indexes. It is not what someone on question 38 of
+ * 124 needs held in front of them. So it stays where it is and scrolls away,
+ * and this takes over the top of the viewport once it has: where you are, how
+ * far in, how it is going, and the way back to the chapter's numbers.
+ *
+ * Bleeds back out to the page gutter rather than the window, so it rules off
+ * the column it belongs to instead of floating across the whole screen.
+ */
+.p-strip{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;
+  height:48px;margin:6px calc(var(--pad) * -1) 0;padding:0 var(--pad);
+  background:var(--canvas);border-bottom:1px solid var(--hairline);font-size:13px}
+.p-strip-where{min-width:0;color:var(--ink-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.p-strip-where b{color:var(--ink);font-weight:600}
+.p-strip-where .c{margin:0 5px}
+.p-strip-at{flex:none;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.p-strip-at b{color:var(--ink);font-weight:600}
+/* Right and wrong as a share of the whole chapter, so the untouched remainder
+   is the track showing through â the same reading as the rail's bar. */
+.p-strip-bar{flex:1;min-width:40px;max-width:340px;display:flex;height:4px;
+  border-radius:2px;overflow:hidden;background:var(--surface-2)}
+.p-strip-bar i{display:block;height:100%}
+.p-strip-bar .g{background:var(--green)}
+.p-strip-bar .r{background:var(--red)}
+.p-strip-done{flex:none;color:var(--ink-3);font-size:12.5px;
+  font-variant-numeric:tabular-nums}
+.p-strip-tools{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
+.p-strip-btn{font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px;
+  border:1px solid var(--hairline-strong);border-radius:var(--radius);
+  background:var(--canvas);color:var(--ink-2);text-decoration:none;white-space:nowrap}
+.p-strip-btn:hover{background:var(--surface);color:var(--ink)}
+.p-strip-btn .ic{color:var(--ink-3);flex:none}
+.p-strip-btn[aria-pressed=false]{color:var(--ink-3)}
+.p-strip-btn[aria-pressed=false] .ic{opacity:.45}
+
+/* The strip's rule ran straight into the question head on one side and the
+   rail's first heading on the other. Spacing the grid rather than the strip
+   moves both columns together, and matches the 20px the sticky rail already
+   sits below the strip. */
+.has-strip .practice{margin-top:20px}
+
+/* The sticky rail starts below the strip rather than under it. */
+.has-strip .p-side{top:68px}
+/* Jumping to the demoted sections should not park them behind the strip. */
+.has-strip .chapter-data h2,.has-strip .qindex h2{scroll-margin-top:62px}
+
+/* Narrow: the two things that survive are how far in you are and the tools.
+   The chapter name is in the h1 a few pixels above, and "37 done" is a nicety
+   the bar already shows. */
+@media(max-width:760px){
+  .p-strip{gap:10px}
+  .p-strip-where,.p-strip-done{display:none}
+  .p-strip-btn span{display:none}
+}
+
+/* ------------------------------------------------------ practice screen -- */
+.practice{display:grid;grid-template-columns:minmax(0,1fr) 236px;gap:32px;align-items:start}
+/* minmax(0,â¦) again, not a bare 1fr: `1fr` is `minmax(auto,1fr)`, and an auto
+   minimum refuses to shrink a track below its content's min-content width. The
+   wide track above is clamped for exactly that reason and the single-column
+   override used to drop the clamp, so one unbreakable child â a long question
+   stem, a wide expression â laid the practice pane out at 777px inside a 390px
+   body and set the whole page scrolling sideways. */
+@media(max-width:1080px){.practice{grid-template-columns:minmax(0,1fr)}
+  .p-side{order:2}.p-main{order:1}}
+.p-side{display:flex;flex-direction:column;gap:18px;position:sticky;top:20px}
+@media(max-width:1080px){.p-side{position:static}}
+
+.side-h{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.side-h .n{margin-left:auto;font-variant-numeric:tabular-nums;letter-spacing:0;
+  text-transform:none;font-weight:500;font-size:12px}
+
+/* Progress, where a three-number scoreboard used to be.
+   One count against the chapter, one bar, and the two outcomes â with the
+   wrong total doubling as the way to go and fix them. Accuracy is unhidden by
+   app.js only past five answers; before that it is a verdict on nothing. */
+.side-h .n#p-acc{color:var(--ink-2);font-weight:600}
+.p-prog-n{margin:0 0 8px;font-size:13px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.p-prog-n b{font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink);
+  line-height:1.15;margin-right:3px}
+.p-prog-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;
+  background:var(--surface-2);margin-bottom:11px}
+.p-prog-bar i{display:block;height:100%}
+.p-prog-bar .g{background:var(--green)}
+.p-prog-bar .r{background:var(--red)}
+.p-prog-key{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
+  gap:7px;font-size:12.5px;color:var(--ink-2)}
+.p-prog-key li{display:flex;align-items:center;gap:7px;min-height:22px}
+.p-prog-key .d{width:7px;height:7px;border-radius:50%;flex:none}
+.p-prog-key .d.g{background:var(--green)}
+.p-prog-key .d.r{background:var(--red)}
+.p-prog-key b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+/* Quiet until there is something to redo â the wash only appears alongside a
+   non-zero count, so it reads as a consequence rather than a standing button. */
+.p-redo{font:inherit;font-size:12px;font-weight:500;cursor:pointer;flex:none;
+  margin-left:auto;padding:3px 8px;border-radius:var(--radius-sm);
+  border:1px solid transparent;background:var(--red-wash);color:var(--red-ink)}
+.p-redo:hover{border-color:var(--red)}
+
+/* Question navigator, folded. The palette from the exam hall is the wrong
+   default in a revision tool â you go forward, and you come back to your
+   mistakes, which the progress block above now does in one button. Kept for
+   the review pass, closed until asked for, and app.js remembers the answer. */
+.p-jump>summary,.p-more>summary{cursor:pointer;list-style:none;user-select:none;
+  display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;
+  color:var(--ink-2);background:var(--canvas);
+  border:1px solid var(--hairline-strong);border-radius:var(--radius);padding:7px 10px}
+.p-jump>summary::-webkit-details-marker,.p-more>summary::-webkit-details-marker{display:none}
+.p-jump>summary:hover,.p-more>summary:hover{background:var(--surface);color:var(--ink)}
+.p-jump>summary .ic,.p-more>summary .ic{color:var(--ink-3);flex:none}
+.p-jump>summary .ic:last-child,.p-more>summary .ic:last-child{margin-left:auto;transition:transform .12s}
+.p-jump[open]>summary .ic:last-child,.p-more[open]>summary .ic:last-child{transform:rotate(180deg)}
+.p-jump[open]>summary,.p-more[open]>summary{color:var(--ink)}
+.p-jump .grid-nav{margin-top:8px}
+
+/* Question navigator */
+.grid-nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(28px,1fr));gap:4px;
+  max-height:264px;overflow-y:auto}
+.gsq{position:relative;font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;
+  aspect-ratio:1;border:1px solid var(--hairline);border-radius:var(--radius-sm);
+  background:var(--canvas);color:var(--ink-2);font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.gsq:hover{border-color:var(--accent);color:var(--ink)}
+.gsq.is-right{background:var(--green-wash);border-color:transparent;color:var(--green-ink)}
+.gsq.is-wrong{background:var(--red-wash);border-color:transparent;color:var(--red-ink)}
+.gsq.is-marked::after{content:"";position:absolute;top:2px;right:2px;width:4px;height:4px;
+  border-radius:50%;background:var(--amber)}
+.gsq.is-at{background:var(--accent);border-color:var(--accent);color:#04231d;font-weight:600}
+
+/* What to practise now.
+   Four rows in place of a Show: select, because the count is the point â a
+   candidate deciding what to do next is asking how big the job is, and an
+   <option> cannot answer that. Selected takes the accent fill the year chips
+   and the current question square already use; a row with nothing in it is
+   disabled rather than hidden, so the list does not reflow as you work. */
+.p-intent{display:flex;flex-direction:column;gap:4px}
+.p-intent button{font:inherit;font-size:13px;font-weight:500;cursor:pointer;
+  display:flex;align-items:center;gap:8px;text-align:left;width:100%;
+  padding:6px 10px;border-radius:var(--radius);
+  border:1px solid var(--hairline-strong);background:var(--canvas);color:var(--ink-2)}
+.p-intent button:hover:not(:disabled){background:var(--surface);color:var(--ink)}
+.p-intent button b{margin-left:auto;font-weight:500;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.p-intent button[data-only=wrong]:not(:disabled) b{color:var(--red-ink)}
+.p-intent button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);
+  color:#04231d;font-weight:600}
+.p-intent button[aria-pressed=true] b,
+.p-intent button[aria-pressed=true][data-only=wrong] b{color:#04231d;font-weight:600}
+.p-intent button:disabled{opacity:.45;cursor:default}
+.p-more{margin-top:9px}
+.p-more .filters{margin-top:8px}
+
+/* Filters */
+.filters{display:flex;flex-direction:column;gap:8px}
+.filters label{font-size:11px;font-weight:600;color:var(--ink-3);
+  display:flex;flex-direction:column;gap:4px;
+  text-transform:uppercase;letter-spacing:.05em}
+.filters select{font:inherit;font-size:13.5px;font-weight:400;color:var(--ink);
+  background:var(--canvas);border:1px solid var(--hairline-strong);
+  border-radius:var(--radius);padding:6px 8px;width:100%;height:32px;
+  text-transform:none;letter-spacing:0}
+
+/* Question */
+.q-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;
+  font-size:12.5px;color:var(--ink-3)}
+.q-head .topic{color:var(--acc-ink,var(--accent-ink));font-weight:500}
+.q-head .sep{color:var(--ink-3)}
+.q-head .right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.timer{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-3);
+  display:flex;align-items:center;gap:4px}
+.timer.warn{color:var(--amber-ink)}
+.iconbtn{background:none;border:none;cursor:pointer;padding:4px;color:var(--ink-3);
+  display:flex;border-radius:var(--radius-sm);line-height:0}
+.iconbtn:hover{background:var(--surface-2);color:var(--ink-2)}
+.iconbtn[aria-pressed=true]{color:var(--amber)}
+
+/* The stem is the only long-form reading on the screen, so it takes a prose
+   measure â the same 62ch the lede and the mock blurb already use, ~82
+   characters here. Everything else in the card is UI and keeps the full column:
+   the options, and the match-list and data tables, which are siblings of this
+   heading rather than children of it and so are untouched.
+   Without this, collapsing the sidebar pushed a wordy statement question to
+   ~132 characters a line. */
+.qtitle{font-size:16.5px;line-height:1.65;font-weight:400;margin:0;color:var(--ink);
+  max-width:62ch}
+h1.qtitle{font-size:17px;font-weight:500}
+
+/* Options â quiet until answered, then semantic. */
+.opts{list-style:none;padding:0;margin:18px 0 0}
+.opts li{margin:0 0 6px}
+.opt{width:100%;font:inherit;font-size:15px;text-align:left;cursor:pointer;color:var(--ink);
+  background:var(--canvas);border:1px solid var(--hairline-strong);
+  border-radius:var(--radius);padding:10px 12px;display:flex;gap:11px;align-items:center;
+  line-height:1.5}
+.opt:hover:not(:disabled){background:var(--surface);border-color:var(--ink-3)}
+.opt:disabled{cursor:default}
+.opt-key{width:22px;height:22px;border-radius:var(--radius-sm);flex:none;
+  background:var(--surface-2);color:var(--ink-2);font-weight:500;font-size:12px;
+  display:flex;align-items:center;justify-content:center}
+.opt-cross,.opt-tick{margin-left:auto;flex:none;display:none}
+.opt-tick{color:var(--green)}.opt-cross{color:var(--red)}
+.opts.done .opt.correct{background:var(--green-wash);border-color:var(--green)}
+/* Dark ink, not white: --green and --red are mid-to-light in light theme and
+   lighter still in dark, so white on them is 2.3-2.9:1. These two inks clear
+   4.5 on all four fills (green 5.70/7.35, red 4.53/7.37). */
+.opts.done .opt.correct .opt-key{background:var(--green);color:#06230f}
+.opts.done .opt.correct .opt-tick{display:block}
+.opts.done .opt.picked:not(.correct){background:var(--red-wash);border-color:var(--red)}
+.opts.done .opt.picked:not(.correct) .opt-key{background:var(--red);color:#0d0202}
+.opts.done .opt.picked:not(.correct) .opt-cross{display:block}
+
+.numeric{margin-top:18px}
+.numeric label{display:block;font-size:11px;font-weight:600;color:var(--ink-3);
+  margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.numeric-row{display:flex;gap:8px}
+.num-in{flex:1;min-width:0;font:inherit;font-size:15px;background:var(--canvas);color:var(--ink);
+  border:1px solid var(--hairline-strong);border-radius:var(--radius);padding:0 12px;height:36px}
+.num-in::placeholder{color:var(--ink-3)}
+.num-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.num-go{height:36px}
+
+.verdict{margin:14px 0 0;font-weight:500;font-size:14px;display:flex;align-items:center;gap:6px}
+.verdict.right{color:var(--green-ink)}.verdict.wrong{color:var(--red-ink)}
+
+/* Why-did-I-miss-it tags. The diagnostic hinge, ported from the app. */
+.reasons{margin:14px 0 0;padding:12px;background:var(--surface);
+  border-radius:var(--radius-lg)}
+.reasons .side-h{margin-bottom:8px}
+.reason-set{display:flex;flex-wrap:wrap;gap:6px}
+.reason{font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  padding:4px 10px;border-radius:999px;background:var(--canvas);
+  border:1px solid var(--hairline-strong);color:var(--ink-2)}
+.reason:hover{border-color:var(--ink-3);color:var(--ink)}
+.reason[aria-pressed=true]{background:var(--amber-wash);border-color:var(--amber);
+  color:var(--amber-ink);font-weight:600}
+.note-in{width:100%;font:inherit;font-size:13.5px;margin-top:8px;resize:vertical;
+  min-height:34px;color:var(--ink);background:var(--canvas);
+  border:1px solid var(--hairline-strong);border-radius:var(--radius);padding:7px 10px}
+.note-in::placeholder{color:var(--ink-3)}
+.note-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+/* Answer + solution */
+details.reveal{margin-top:16px}
+details.reveal>summary{cursor:pointer;list-style:none;font-size:13.5px;font-weight:500;
+  color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border:1px solid var(--hairline-strong);border-radius:var(--radius);
+  user-select:none}
+details.reveal>summary::-webkit-details-marker{display:none}
+details.reveal>summary:hover{background:var(--surface);color:var(--ink)}
+details.reveal[open]>summary{display:none}
+.answer{margin:0 0 12px;font-weight:500;font-size:14px;color:var(--green-ink)}
+.expl-head{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);margin:18px 0 8px;padding-top:16px;border-top:1px solid var(--hairline)}
+/* The worked solution is the other long-form read on the screen and takes the
+   same prose measure as the stem. Its own tables and figures are children of
+   .soln rather than siblings, so they opt back out below. */
+.soln{font-size:15px;line-height:1.7;color:var(--ink-2);max-width:62ch}
+.soln table,.soln img,.soln .fig,.soln pre{max-width:100%}
+.soln strong{color:var(--ink);font-weight:600}
+.sec-head{font-size:15px;font-weight:600;margin:22px 0 8px;
+  padding-top:18px;border-top:1px solid var(--hairline)}
+
+/* Reachable by a screen reader, absent from the page. Used for the header of
+   the bar column, which is decorative to a sighted reader and unlabelled
+   without it. */
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
+/* The generated summary under a chapter's h1 â one or two sentences of what
+   the bank knows about this chapter. Reads as prose, so it takes the body
+   measure rather than the .sub treatment beside it. */
+.lede{margin:10px 0 0;max-width:62ch;color:var(--ink-2);font-size:14.5px;line-height:1.55}
+
+/* "â¦by the numbers": year-wise and format breakdowns, computed at build time.
+   Two columns where there is room, stacked below it. */
+.chapter-data{margin-top:36px;padding-top:22px;border-top:1px solid var(--hairline)}
+.chapter-data>h2{font-size:16px;font-weight:600;margin:0 0 16px}
+.cd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+.cd-block h3{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 8px}
+.cd-scroll{max-height:420px;overflow-y:auto}
+.cd-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.cd-table th,.cd-table td{padding:5px 8px;text-align:left;font-weight:400}
+.cd-table thead th{font-size:11px;color:var(--ink-3);font-weight:500;
+  border-bottom:1px solid var(--hairline);position:sticky;top:0;background:var(--canvas)}
+.cd-table tbody th{font-weight:500;white-space:nowrap}
+.cd-table tbody th a{color:inherit;text-decoration:none}
+.cd-table tbody th a:hover{text-decoration:underline}
+.cd-table .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-2)}
+.cd-table tbody tr+tr th,.cd-table tbody tr+tr td{border-top:1px solid var(--hairline)}
+/* The bar column takes whatever is left, so the numbers stay put as the
+   chapter list gets wider. */
+.cd-table .bar{width:40%;padding-right:0}
+.cd-table .bar span{display:block;height:6px;border-radius:3px;
+  background:var(--acc,var(--ink-3));opacity:.55;min-width:2px}
+
+/* "This one has come up before", under a question. Rare enough â 56 of 16,428
+   JEE questions â that it reads as a finding rather than furniture. */
+.repeats{margin-top:26px;padding:16px 18px;border:1px solid var(--hairline);
+  border-radius:var(--radius-lg);background:var(--surface)}
+.repeats h2{font-size:14px;font-weight:600;margin:0 0 12px}
+.rp-set+.rp-set{margin-top:12px}
+.rp-k{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.rp-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+
+/* /repeats/ â the whole list, one entry per question that came back. */
+.rq-list{list-style:none;margin:18px 0 0;padding:0;
+  border:1px solid var(--hairline);border-radius:var(--radius-lg);overflow:hidden}
+.rq{padding:14px 16px;background:var(--canvas)}
+.rq+.rq{border-top:1px solid var(--hairline)}
+/* The stem carries rendered KaTeX, so it cannot be truncated in the build
+   without cutting an expression in half. Clamped to three lines here instead â
+   the whole stem stays in the DOM for a crawler and a screen reader. */
+.rq-stem{font-size:15px;line-height:1.45;margin-bottom:7px;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rq-stem a{color:inherit;text-decoration:none}
+.rq-stem a:hover{text-decoration:underline}
+.rq-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.rq-sub{font-size:12.5px;color:var(--ink-3)}
+.rq-papers{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}
+.rq-papers a{color:var(--ink-2)}
+
+/* Every question on the screen as a real link, under the practice pane.
+   Borrows the .rows hairline treatment rather than inventing a second list
+   idiom, but keeps its own class: these rows carry three fields, wrap to two
+   lines on a phone, and there can be 340 of them. */
+.qindex{margin-top:36px;padding-top:22px;border-top:1px solid var(--hairline)}
+.qindex h2{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink-2)}
+.qindex-list{list-style:none;margin:0;padding:0;
+  border:1px solid var(--hairline);border-radius:var(--radius-lg);overflow:hidden}
+.qindex-list li+li{border-top:1px solid var(--hairline)}
+.qindex-list a{display:flex;align-items:baseline;gap:10px;padding:9px 12px;
+  text-decoration:none;color:var(--ink);font-size:14px;background:var(--canvas)}
+.qindex-list a:hover{background:var(--surface)}
+.qi-n{flex:none;width:3.2em;color:var(--ink-3);font-size:12.5px;font-weight:500;
+  font-variant-numeric:tabular-nums}
+.qi-t{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qi-p{flex:none;color:var(--ink-3);font-size:12px}
+@media (max-width:640px){
+  .qindex-list a{flex-wrap:wrap;row-gap:2px}
+  .qi-t{flex:1 0 60%}
+  .qi-p{width:100%;padding-left:calc(3.2em + 10px)}
+}
+
+/* Prev / next */
+.pnav{display:flex;gap:8px;margin-top:20px;align-items:center}
+.pnav .spacer{flex:1}
+.pcount{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+.notice{display:flex;align-items:flex-start;gap:8px;background:var(--surface);
+  border-radius:var(--radius-lg);padding:10px 12px;margin:0 0 16px;
+  font-size:13px;line-height:1.5;color:var(--ink-2)}
+.notice .ic{color:var(--ink-3);flex:none;margin-top:1px}
+.notice strong{font-weight:600;color:var(--ink)}
+.notice button{margin-left:auto;flex:none;background:none;border:none;cursor:pointer;
+  color:var(--ink-3);font-size:16px;line-height:1;padding:0 2px;border-radius:var(--radius-xs)}
+.notice button:hover{color:var(--ink)}
+
+/* The resume line. Same notice shape, accent ground â it is the one banner on
+   this screen that reports something good, and it is answering a question the
+   reader is already asking ("where was I?"). Its button is a real choice
+   rather than a dismissal, so it takes body size and an underline instead of
+   the Ã's 16px glyph treatment. */
+.notice.resume{background:var(--accent-wash);color:var(--accent-ink);align-items:center}
+.notice.resume .ic{color:var(--accent-ink);margin-top:0}
+.notice.resume strong{color:var(--accent-ink)}
+.notice.resume button{font:inherit;font-size:12.5px;color:var(--ink-2);
+  text-decoration:underline;padding:2px 4px}
+.notice.resume button:hover{color:var(--ink)}
+
+/* End of the practice loop. Below this line sit the chapter breakdowns and the
+   full question index â still expanded, still crawlable, no longer the first
+   thing under the Next button. */
+.pboundary{display:flex;align-items:center;gap:12px;margin:44px 0 0;
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3)}
+.pboundary::before,.pboundary::after{content:"";flex:1;height:1px;background:var(--hairline)}
+/* The sections below it bring their own 36px top margin and rule; with the
+   boundary above them that would be two hairlines 22px apart. */
+.pboundary+.chapter-data,.pboundary+.qindex{margin-top:22px;padding-top:0;border-top:none}
+
+/* ------------------------------------------------------------ progress -- */
+.bar{height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--acc,var(--accent));border-radius:2px}
+.prog-row{display:grid;grid-template-columns:110px 1fr 76px;gap:12px;align-items:center;
+  padding:7px 0;font-size:13.5px}
+.prog-row .k{color:var(--ink-2)}
+.prog-row .v{text-align:right;color:var(--ink-3);font-variant-numeric:tabular-nums;font-size:12.5px}
+
+/* Weekly bar chart */
+.chart{display:flex;align-items:flex-end;gap:6px;height:96px;padding-top:8px}
+.chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.chart .col>i{display:block;width:100%;max-width:26px;background:var(--accent-wash);
+  border-radius:var(--radius-xs) var(--radius-xs) 0 0;margin-top:auto;min-height:2px}
+.chart .col.on>i{background:var(--accent)}
+.chart .col span{font-size:10.5px;color:var(--ink-3)}
+
+/* Day group heading in the mistake notebook, with its own Practise button. */
+.daygroup{font-size:12px;font-weight:600;color:var(--ink-3);margin:20px 0 6px;
+  display:flex;align-items:center;gap:10px}
+.daygroup .btn{margin-left:auto}
+.daygroup[hidden]{display:none}
+.insight{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;color:var(--ink-2);
+  background:var(--amber-wash);border-radius:var(--radius-lg);padding:10px 12px;margin:0 0 18px}
+.insight .ic{color:var(--amber-ink);flex:none;margin-top:1px}
+.insight strong{color:var(--ink);font-weight:600}
+
+/* Coaching test card */
+.test{border:1px solid var(--hairline);border-radius:var(--radius-lg);padding:14px 16px;
+  margin-bottom:10px;background:var(--canvas)}
+.test-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.test-head .name{font-size:15px;font-weight:600}
+.test-head .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.test .when{font-size:12.5px;color:var(--ink-3);display:flex;align-items:center;gap:5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.chip{font-size:11.5px;padding:3px 8px;border-radius:var(--radius-sm);
+  background:var(--surface-2);color:var(--ink-2)}
+
+/* Selectable chapter list, used by the test builder */
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px;
+  max-height:300px;overflow-y:auto;border:1px solid var(--hairline);
+  border-radius:var(--radius-lg);padding:6px}
+.pick label{display:flex;gap:8px;align-items:center;font-size:13.5px;
+  padding:6px 8px;border-radius:var(--radius-sm);cursor:pointer;color:var(--ink-2)}
+.pick label:hover{background:var(--surface)}
+.pick small{margin-left:auto;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+/* ----------------------------------------------------------- media/math -- */
+img{max-width:100%;height:auto;border-radius:var(--radius);background:#fff}
+.img-missing{display:inline-block;width:1em;height:1em}
+.tex{font-size:13px;background:var(--surface-2);padding:1px 5px;border-radius:var(--radius-xs)}
+.mv{font-family:KaTeX_Math,'Times New Roman',serif;font-style:italic}
+.mn{font-family:KaTeX_Main,'Times New Roman',serif;font-style:normal}
+.katex{font-size:1.04em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:2px 0}
+.soln,.qtitle{overflow-wrap:break-word}
+/* Where an expression will not parse, KaTeX prints its source in #cc0000 â
+   2.94:1 on the dark ground. Kept visible (it is a real bank defect) but
+   legible in both themes. */
+.katex-error{color:var(--red-ink) !important;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;
+  background:var(--red-wash);border-radius:var(--radius-xs);padding:0 4px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+
+.ad{margin:20px 0}
+
+footer{margin-top:56px;padding:18px 0;border-top:1px solid var(--hairline);
+  font-size:12.5px;color:var(--ink-3);line-height:1.6}
+footer a{color:var(--ink-3);text-decoration:none}
+footer a:hover{color:var(--ink-2);text-decoration:underline}
+
+/* Match-list tables. 274 of the 331 such questions render as a real table now
+   (57 are LaTeX arrays, which KaTeX draws itself). Scrolls inside its own box
+   so a wide row never makes the page scroll sideways. */
+.ml-wrap{overflow-x:auto;margin:14px 0}
+.ml{border-collapse:collapse;font-size:15px;min-width:min(100%,420px)}
+.ml th,.ml td{border:1px solid var(--hairline);padding:8px 12px;
+  text-align:left;vertical-align:top;line-height:1.5}
+.ml th{background:var(--surface);font-weight:600;font-size:13px;color:var(--ink-2)}
+.ml td:first-child{width:55%}
+.ml img{max-width:220px}
+
+/* Data tables from the bank's own markdown pipe rows â 718 of them in the SSC
+   bank, up to seven columns. Shares the match-list borders but not its
+   two-column assumption: a 55% first column on a seven-column table leaves the
+   other six sharing what is left. */
+.ml.dt td:first-child{width:auto}
+.ml.dt th,.ml.dt td{padding:6px 10px;white-space:nowrap}
+
+/* Marks entry on a past coaching test â narrow, inline with the actions. */
+.ct-marks{width:84px;height:28px;font-size:13px;padding:0 8px;flex:none}
+
+/* ===================================================================== mock ==
+ *
+ * The exam runner, and the two places on the ordinary site that point at it.
+ *
+ * Everything here is prefixed .ex- and reachable only from /<exam>/mock/, which
+ * is the one page in the build that renders with `bare` â no sidebar, no
+ * breadcrumbs, no footer. An exam screen with a site navigation rail down one
+ * side is an exam screen you can walk out of by accident.
+ *
+ * The layout follows the real screens deliberately: header band, section tabs,
+ * question pane, four action buttons in a row, palette rail on the right. That
+ * familiarity is most of what a mock is for. What it does NOT copy is anyone's
+ * emblem â the mark in the corner is PYQBox's own, and the colours are this
+ * stylesheet's tokens rather than the originals' saturated blues.
+ */
+
+/* ---- the band on a paper page that starts one ---- */
+.mockcta{margin:20px 0 4px;padding:16px 18px;border-radius:var(--radius-lg);
+  border:1px solid var(--accent);background:var(--accent-wash)}
+.mockcta-t{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;
+  color:var(--accent-ink)}
+.mockcta-t .ic{color:var(--accent-ink)}
+.mockcta p{margin:6px 0 0;font-size:14px;color:var(--ink-2);max-width:62ch;line-height:1.5}
+.mockcta-facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 14px;
+  font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.mockcta-facts span{display:inline-flex;align-items:center;gap:6px}
+.mockcta-facts .ic{color:var(--ink-3);flex:none}
+.mockcta-best{font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+/* What the reset is about to reach, said before it is pressed rather than
+   discovered afterwards. Smaller than the block's own prose â it answers a
+   question you only have while the confirm buttons are up. `.mockcta p` sets
+   the size for this block's prose and would otherwise win on specificity. */
+.mockcta p.mockcta-note{font-size:13px;color:var(--ink-3);margin:10px 0 0;max-width:62ch}
+
+/* The mock link on a /papers/ row. Icon-only, because `q-search` matches on a
+   row's textContent and a word repeated on 193 rows matches all 193. */
+.rows li:has(.row-mock){display:flex;align-items:stretch}
+.rows li:has(.row-mock)>.row{flex:1;min-width:0}
+.row-mock{flex:none;display:flex;align-items:center;padding:0 14px;
+  color:var(--ink-3);border-left:1px solid var(--hairline);background:var(--canvas)}
+.row-mock:hover{background:var(--accent-wash);color:var(--accent-ink)}
+.row .best{color:var(--accent-ink);font-weight:600}
+
+/* ---- shell ---- */
+body.bare{background:var(--surface)}
+/* Only the running paper takes the viewport and stops the page scrolling â
+   the instructions and the report are ordinary documents and want to scroll.
+   mock.js puts this class on while the exam view is up. */
+body.ex-running{height:100dvh;overflow:hidden}
+body.ex-running .ex{height:100%}
+body.ex-running .ex-run{flex:1;min-height:0;display:flex;flex-direction:column}
+.ex{display:flex;flex-direction:column;min-height:100dvh}
+.ex-view[hidden]{display:none}
+
+.ex-top{display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  padding:10px 20px;background:var(--canvas);border-bottom:1px solid var(--hairline-strong)}
+.ex-brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);flex:none}
+.ex-brand .mark{width:26px;height:26px;border-radius:var(--radius-sm);flex:none;
+  background:var(--accent);color:#04231d;font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:-.02em}
+.ex-brand .name{font-weight:600;font-size:15px}
+.ex-id{display:flex;gap:26px;margin:0;flex-wrap:wrap;min-width:0}
+.ex-id dt{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3)}
+.ex-id dd{margin:0;font-size:14px;font-weight:500;max-width:42ch;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ex-clock{margin-left:auto;flex:none;display:flex;flex-direction:column;align-items:flex-end;
+  padding:4px 12px;border-radius:var(--radius);background:var(--surface-2)}
+.ex-clock .k{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3)}
+.ex-clock .v{font-size:20px;font-weight:600;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.ex-clock.warn{background:var(--amber-wash)}
+.ex-clock.warn .v{color:var(--amber-ink)}
+.ex-clock.out{background:var(--red-wash)}
+.ex-clock.out .v{color:var(--red-ink)}
+
+/* ---- instructions, and the loading line before them ---- */
+.ex-panel{max-width:820px;margin:0 auto;padding:34px 20px 60px}
+.ex-loading{color:var(--ink-2);font-size:15px;padding:40px 0}
+.ex-panel h1{font-size:26px;letter-spacing:-.02em;margin:0}
+.ex-panel h2{font-size:15px;margin:30px 0 10px;letter-spacing:-.01em}
+.ex-panel .sub{margin:6px 0 0;color:var(--ink-3);font-size:14px}
+
+.ex-facts,.ex-facts-row{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 0}
+.ex-fact{flex:1 1 150px;padding:10px 14px;border:1px solid var(--hairline);
+  border-radius:var(--radius);background:var(--canvas)}
+.ex-fact .k{display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3)}
+.ex-fact .v{display:block;font-size:15px;font-weight:600;margin-top:2px;
+  font-variant-numeric:tabular-nums}
+.ex-fact .v b{font-weight:600;color:var(--ink-3);font-size:13px}
+.ex-dot{color:var(--hairline-strong);margin:0 6px}
+
+.ex-rules{margin:0;padding-left:20px;color:var(--ink-2);font-size:14.5px;line-height:1.6}
+.ex-rules li{margin:0 0 8px}
+.ex-rules strong{color:var(--ink)}
+.ex-note{margin:18px 0 0;padding:12px 14px;border-radius:var(--radius);
+  background:var(--amber-wash);border:1px solid var(--amber);font-size:13.5px;line-height:1.55}
+.ex-note p{margin:0 0 8px}
+.ex-note p:last-child{margin:0}
+.ex-marking table{border-collapse:collapse;width:100%;font-size:14px}
+.ex-marking th,.ex-marking td{border:1px solid var(--hairline);padding:7px 12px;text-align:left}
+.ex-marking th{background:var(--surface);font-weight:600;font-size:12px;color:var(--ink-2)}
+.ex-marking .g{color:var(--green-ink);font-weight:600}
+.ex-marking .r{color:var(--red-ink);font-weight:600}
+.ex-sub{color:var(--ink-3);font-weight:400;font-size:12.5px}
+.ex-start-row{margin-top:26px}
+.btn.lg{height:42px;font-size:15px;padding:0 20px}
+.ex-fs{display:flex;align-items:center;gap:8px;margin-top:14px;
+  font-size:13px;color:var(--ink-3)}
+
+/* ---- the exam ---- */
+.ex-tabs{display:flex;gap:2px;padding:0 20px;background:var(--canvas);
+  border-bottom:1px solid var(--hairline-strong);overflow-x:auto;scrollbar-width:thin}
+.ex-tab{font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+  background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--ink-3);padding:9px 14px;display:flex;align-items:center;gap:7px}
+.ex-tab:hover{color:var(--ink)}
+.ex-tab.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.ex-tab .n{font-size:11px;color:var(--ink-3);background:var(--surface-2);
+  border-radius:20px;padding:1px 6px;font-variant-numeric:tabular-nums}
+/* Sectional timing. A closed section and one not yet open are both
+   unreachable, and they are different kinds of unreachable: the first is spent
+   and the second is ahead of you. The minutes ride on the tab because under
+   this pattern they are the section's defining fact, not its question count. */
+.ex-tab .m{font-size:11px;font-weight:600;color:var(--purple-ink);
+  background:var(--purple-wash);border-radius:20px;padding:1px 6px;
+  font-variant-numeric:tabular-nums}
+.ex-tab:disabled{cursor:default}
+.ex-tab.shut{opacity:.45;text-decoration:line-through;text-decoration-thickness:1px}
+.ex-tab.later{opacity:.55}
+.ex-tab.shut .m,.ex-tab.later .m{background:var(--surface-2);color:var(--ink-3)}
+.ex-tab.on{opacity:1;text-decoration:none}
+.ex-submit+.ex-submit{margin-top:8px}
+
+/* min-height:0 twice, and neither is optional.
+ *
+ * .ex-main is a GRID ITEM of .ex-body and .ex-scroll is a FLEX ITEM of
+ * .ex-main, and both get `min-height:auto` by default â an auto minimum floors
+ * a box at its own content height. So on a question tall enough to need
+ * scrolling, which is exactly the question that needs it, .ex-main grew to its
+ * content (2,027px inside a 138px row) and .ex-scroll grew with it. It kept
+ * `overflow-y:auto` the whole time and had nothing to scroll, because nothing
+ * was ever clipped. With `body.ex-running{overflow:hidden}` holding the page
+ * still, the bottom of a question with figures was simply unreachable. */
+.ex-body{display:grid;grid-template-columns:minmax(0,1fr) 286px;flex:1;min-height:0}
+.ex-main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--canvas)}
+.ex-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:20px 26px 26px}
+.ex-scroll article{max-width:760px}
+.ex-qbar{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.ex-qn{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.ex-qtype{font-size:11px;font-weight:500;color:var(--ink-3);background:var(--surface-2);
+  border-radius:20px;padding:2px 8px}
+/* The exam runner sets its own measure on .ex-scroll article, so it opts out of
+   the practice stem's cap rather than being narrowed twice. */
+.ex-scroll .qtitle{font-size:16px;font-weight:400;line-height:1.6;margin:10px 0 0;
+  max-width:none}
+.ex-scroll article.is-marked .ex-qn::after{content:"marked for review";margin-left:8px;
+  font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--purple-ink)}
+/* Selected, not graded. The practice screen's .done/.correct rules never fire
+   here: nothing is graded until the paper is submitted, and by then the runner
+   has swapped the card out for the report. */
+.ex-opts .opt.sel{background:var(--accent-wash);border-color:var(--accent)}
+.ex-opts .opt.sel .opt-key{background:var(--accent);color:#04231d}
+.ex-numeric{max-width:280px}
+.ex-unsaved{margin:14px 0 0;font-size:13px;font-weight:500;color:var(--amber-ink)}
+
+.ex-warn{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:8px 12px;
+  border-radius:var(--radius);background:var(--amber-wash);border:1px solid var(--amber);
+  font-size:13px;color:var(--ink)}
+.ex-warn-x{margin-left:auto;font:inherit;font-size:18px;line-height:1;cursor:pointer;
+  background:none;border:none;color:var(--ink-3);padding:0 2px}
+
+.ex-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 26px;
+  border-top:1px solid var(--hairline)}
+.btn.amber{border-color:var(--amber);color:var(--amber-ink)}
+.btn.amber:hover:not(:disabled){background:var(--amber-wash)}
+.ex-move{display:flex;gap:8px;align-items:center;padding:0 26px 14px}
+.ex-move .spacer{flex:1}
+.ex-move .pcount{font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+/* ---- palette rail ---- */
+.ex-rail{display:flex;flex-direction:column;min-height:0;gap:14px;
+  padding:16px;background:var(--surface);border-left:1px solid var(--hairline-strong)}
+.ex-rail-x,.ex-rail-open{display:none}
+.ex-legend{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ex-legend li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);
+  line-height:1.3}
+.ex-sec-name{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);border-top:1px solid var(--hairline-strong);padding-top:12px}
+.ex-pal{flex:1;min-height:0;overflow-y:auto;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:6px;align-content:start}
+
+/* The five states. Shape carries the meaning as well as colour does â the real
+   screens use a different outline for each, and a candidate with a red/green
+   deficiency reading only the fill would get two of the five wrong. */
+.exq{position:relative;font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  height:34px;min-width:34px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-variant-numeric:tabular-nums;
+  border:1px solid var(--hairline-strong);background:var(--canvas);color:var(--ink-2)}
+.exq:hover{border-color:var(--ink-3)}
+.exq.is-seen{background:var(--red);border-color:var(--red);color:#0d0202;
+  border-bottom-left-radius:12px;border-bottom-right-radius:12px}
+.exq.is-done{background:var(--green);border-color:var(--green);color:#06230f;
+  border-top-left-radius:12px;border-top-right-radius:12px}
+.exq.is-mark,.exq.is-donemark{background:var(--purple);border-color:var(--purple);
+  color:var(--purple-on);border-radius:50%}
+.exq.is-donemark::after{content:"";position:absolute;right:-1px;bottom:-1px;
+  width:11px;height:11px;border-radius:50%;background:var(--green);
+  border:1.5px solid var(--surface)}
+.exq.is-at{outline:2px solid var(--accent);outline-offset:2px}
+.ex-legend .exq{cursor:default;height:22px;min-width:22px;font-size:10.5px;flex:none}
+.ex-legend .exq b{font-weight:600}
+.ex-submit{width:100%;flex:none}
+
+/* ---- submit confirmation ---- */
+.ex-modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;
+  justify-content:center;padding:20px;background:rgba(15,15,15,.45)}
+.ex-modal[hidden]{display:none}
+.ex-modal-box{background:var(--canvas);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-pop);padding:22px;max-width:640px;width:100%;
+  max-height:86vh;overflow:auto}
+.ex-modal-box h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.ex-modal-box .sub{margin:6px 0 16px;color:var(--ink-3);font-size:13.5px}
+.ex-confirm-table{margin-bottom:18px;overflow-x:auto}
+.ex-confirm-table table{border-collapse:collapse;width:100%;font-size:13px;
+  font-variant-numeric:tabular-nums}
+.ex-confirm-table th,.ex-confirm-table td{border:1px solid var(--hairline);
+  padding:6px 10px;text-align:left;white-space:nowrap}
+.ex-confirm-table th{background:var(--surface);font-weight:600;font-size:11.5px;
+  color:var(--ink-2)}
+.ex-confirm-table .g{color:var(--green-ink);font-weight:600}
+.ex-confirm-table .r{color:var(--red-ink);font-weight:600}
+
+/* ---- report ---- */
+.ex-report{max-width:1000px;margin:0 auto;padding:30px 20px 70px}
+.ex-rep-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.ex-rep-head h1{margin:0;font-size:24px;letter-spacing:-.02em}
+.ex-rep-head .sub{margin:4px 0 0;color:var(--ink-3);font-size:13.5px}
+.ex-rep-head .btn{margin-left:auto}
+.ex-report h2{font-size:15px;margin:34px 0 10px;letter-spacing:-.01em}
+.ex-report h2+.sub{margin:-6px 0 12px;color:var(--ink-3);font-size:13.5px;max-width:70ch}
+
+.ex-score{display:flex;flex-wrap:wrap;gap:22px;align-items:center;margin-top:20px;
+  padding:20px 22px;border-radius:var(--radius-lg);border:1px solid var(--accent);
+  background:var(--accent-wash)}
+.ex-score-big{display:flex;flex-direction:column;flex:none;min-width:150px}
+.ex-score-big .v{font-size:52px;font-weight:600;line-height:1;letter-spacing:-.03em;
+  color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.ex-score-big .k{font-size:13px;color:var(--ink-2);margin-top:4px}
+.ex-score-side{list-style:none;margin:0;padding:0;flex:1;min-width:220px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 20px}
+.ex-score-side li{display:flex;flex-direction:column;gap:1px}
+.ex-score-side .k{font-size:11.5px;color:var(--ink-2)}
+.ex-score-side .v{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.ex-score-side .g{color:var(--green-ink)}
+.ex-score-side .r{color:var(--red-ink)}
+.ex-note-line{margin:14px 0 0;font-size:13.5px;color:var(--ink-2);max-width:70ch}
+
+/* Wide tables scroll inside their own box; the page never scrolls sideways. */
+.ex-table{overflow-x:auto;border:1px solid var(--hairline);border-radius:var(--radius-lg)}
+.ex-table table{border-collapse:collapse;width:100%;font-size:13.5px;
+  font-variant-numeric:tabular-nums}
+.ex-table th,.ex-table td{padding:8px 12px;text-align:left;vertical-align:top;
+  border-bottom:1px solid var(--hairline);white-space:nowrap}
+.ex-table thead th{background:var(--surface);font-weight:600;font-size:11.5px;
+  color:var(--ink-2);position:sticky;top:0}
+.ex-table tbody tr:last-child td{border-bottom:none}
+.ex-table tbody tr:hover{background:var(--surface)}
+.ex-table .g{color:var(--green-ink)}
+.ex-table .r{color:var(--red-ink)}
+.ex-table a{color:var(--accent-ink);text-decoration:none}
+.ex-table a:hover{text-decoration:underline}
+.ex-every{max-height:620px;overflow-y:auto}
+.ex-every td{white-space:normal}
+.ex-stem{color:var(--ink-2);display:inline-block;max-width:46ch;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+
+.ex-v{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  border-radius:20px;padding:2px 7px;white-space:nowrap}
+.ex-v.is-right{background:var(--green-wash);color:var(--green-ink)}
+.ex-v.is-partial{background:var(--amber-wash);color:var(--amber-ink)}
+.ex-v.is-wrong{background:var(--red-wash);color:var(--red-ink)}
+.ex-v.is-skip{background:var(--surface-2);color:var(--ink-3)}
+.ex-v.is-nokey{background:var(--purple-wash);color:var(--purple-ink)}
+.ex-rep-actions{margin-top:34px}
+
+/* ---- the phone ----
+ * The rail becomes a sheet, as the real screens do: a floating button with the
+ * answered count on it, and the palette slides over the question rather than
+ * squeezing it into a column too narrow to read a stem in.
+ */
+@media(max-width:900px){
+  .ex-top{gap:12px;padding:8px 14px}
+  .ex-id{gap:16px;flex:1}
+  .ex-id dd{max-width:24ch;font-size:13px}
+  .ex-clock{padding:2px 10px}
+  .ex-clock .v{font-size:17px}
+  .ex-body{grid-template-columns:minmax(0,1fr)}
+  .ex-scroll{padding:16px 16px 20px}
+  .ex-actions{padding:10px 16px;gap:6px}
+  .ex-actions .btn{flex:1 1 46%;font-size:13px;padding:0 8px}
+  .ex-move{padding:0 16px 12px}
+  .ex-rail{position:fixed;inset:0 0 0 auto;width:min(320px,86vw);z-index:40;
+    box-shadow:var(--shadow-pop);transform:translateX(101%);transition:transform .16s;
+    border-left:1px solid var(--hairline-strong)}
+  .ex-rail.open{transform:none}
+  .ex-rail-x{display:block;position:absolute;top:8px;right:10px;font:inherit;font-size:22px;
+    line-height:1;background:none;border:none;color:var(--ink-3);cursor:pointer;padding:2px 6px}
+  .ex-rail-open{display:flex;align-items:center;gap:7px;position:fixed;right:14px;bottom:14px;
+    z-index:30;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    height:42px;padding:0 16px;border-radius:22px;border:1px solid var(--accent);
+    background:var(--accent);color:#04231d;box-shadow:var(--shadow-pop);
+    font-variant-numeric:tabular-nums}
+  .ex-panel{padding:24px 16px 50px}
+  .ex-report{padding:22px 14px 60px}
+  .ex-score-big .v{font-size:40px}
+  .rows li:has(.row-mock)>.row{min-width:0}
+}
+
+/* ---- a viewport too short to pin anything ----
+ *
+ * The exam layout holds the header, the section tabs, four action buttons and
+ * the Back/Next row still, and gives the question whatever is left. That is the
+ * right trade at 800px and a bad one at 400: the fixed chrome comes to about
+ * 190px, so a laptop window at 500px leaves the question 300, and a phone in
+ * landscape leaves it almost nothing â measured at 36 pixels on a 348px
+ * viewport, with the figures below the fold and no way down.
+ *
+ * Below this the lock comes off and the whole screen scrolls as an ordinary
+ * document, chrome included, with the rail following the question rather than
+ * sitting beside it. The clock is the one thing that cannot scroll away, so
+ * the header sticks.
+ */
+@media(max-height:560px){
+  body.ex-running{height:auto;overflow:visible}
+  body.ex-running .ex{height:auto}
+  body.ex-running .ex-run{display:block;min-height:0}
+  .ex-top{position:sticky;top:0;z-index:20}
+  .ex-tabs{position:sticky;top:0;z-index:19}
+  .ex-body{display:block}
+  .ex-main{display:block}
+  .ex-scroll{overflow:visible;min-height:0}
+  .ex-actions{position:sticky;bottom:0;z-index:18;background:var(--canvas);
+    border-top:1px solid var(--hairline-strong)}
+  /* Static, and after the question rather than over it â at this height a
+     slide-over sheet would cover the whole screen. */
+  .ex-rail{position:static;width:auto;transform:none;z-index:auto;box-shadow:none;
+    border-left:none;border-top:1px solid var(--hairline-strong)}
+  .ex-rail.open{transform:none}
+  .ex-rail-x,.ex-rail-open{display:none}
+  .ex-pal{overflow:visible;min-height:0}
+}
+
+/* ------------------------------------------------------------ the phone -- *
+ * Previous/Next sat at the far end of the question â on a 844px screen that
+ * put Next below the fold on every single question, so advancing meant
+ * scrolling past the whole stem and all four options first. It is the one
+ * control you use 124 times, so it stops scrolling and sits on the glass.
+ *
+ * 44px targets, and `.content` gets the height back as padding so the last of
+ * the page is never stranded underneath the bar. `:not(.ppages)` keeps the
+ * crawlable page-to-page pager where it is â that is a footer link, not a
+ * control you reach for mid-question.
+ */
+@media(max-width:900px){
+  .pnav:not(.ppages){position:fixed;left:0;right:0;bottom:0;z-index:6;
+    margin:0;padding:8px 14px;gap:8px;background:var(--canvas);
+    border-top:1px solid var(--hairline)}
+  .pnav:not(.ppages) .btn{height:44px}
+  .pnav:not(.ppages) #p-next{flex:1}
+  .pnav:not(.ppages) .spacer{display:none}
+  /* The strip already says "38 of 126" and stays on screen; repeating it on
+     the bar would cost width the buttons want. */
+  .pnav:not(.ppages) .pcount{display:none}
+  .content{padding-bottom:88px}
+
+  /* The rail keeps its place below the question, but stops being a column of
+     full-width rows: the four intents become a scrolling row of chips and the
+     two outcomes sit on one line. */
+  .p-intent{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:2px;
+    -ms-overflow-style:none;scrollbar-width:none}
+  .p-intent::-webkit-scrollbar{display:none}
+  .p-intent button{flex:none;width:auto;border-radius:999px;padding:5px 12px}
+  .p-intent button b{margin-left:6px}
+  .p-prog-key{flex-direction:row;flex-wrap:wrap;gap:8px 16px}
+}

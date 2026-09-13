@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chapter_name }} — {{ exam_title }} PYQs | PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/">{{ exam_title }}</a>
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/?subject={{ current_subject }}">{{ current_subject|capitalize }}</a>
+  <span class="sep">/</span>
+  <span>{{ chapter_name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="question-header-info">
+  <div>
+    <h1 class="chapter-title">{{ chapter_name }}</h1>
+    <span style="font-size: 13px; color: #777;">{{ questions|length }} questions available</span>
+  </div>
+
+  <div class="filters-bar">
+    <!-- Year Filter -->
+    <select id="filter-year" class="filter-select">
+      <option value="all">All Years</option>
+      {% for y in available_years %}
+      <option value="{{ y }}">{{ y }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- Type Filter -->
+    <select id="filter-type" class="filter-select">
+      <option value="all">All Types</option>
+      <option value="single">Single Choice (MCQ)</option>
+      <option value="integer">Integer / Numerical</option>
+    </select>
+  </div>
+</div>
+
+<!-- Question Navigation Palette -->
+<div class="q-palette">
+  {% for q in questions %}
+  <a href="#q-{{ loop.index }}" class="q-palette-btn" id="pal-{{ loop.index }}" title="Jump to Q{{ loop.index }} ({{ q.year }})">
+    {{ loop.index }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Question Cards List -->
+<div class="questions-list">
+  {% for q in questions %}
+  <article class="q-card" id="q-{{ loop.index }}" data-index="{{ loop.index }}" data-key="{{ q.correct_answer }}" data-type="{{ q.type }}" data-year="{{ q.year }}">
+    <div class="q-card-head">
+      <div>
+        <span class="q-num-badge">Q{{ loop.index }}</span>
+        <span class="q-details" style="margin-left: 8px;">{{ q.details if q.details else q.year }}</span>
+      </div>
+      <span style="text-transform: uppercase; font-size: 11px; font-weight: 600; color: #888;">
+        {{ q.type }}
+      </span>
+    </div>
+
+    <!-- Question Text & Formulas -->
+    <div class="q-title">
+      {% if q.question_html %}
+        {{ q.question_html|safe }}
+      {% else %}
+        {{ q.question_text }}
+      {% endif %}
+    </div>
+
+    <!-- Local Question Diagrams / Images -->
+    {% if q.images %}
+      <div class="q-images" style="margin: 16px 0;">
+        {% for img in q.images %}
+          {% if img.local_path %}
+            <img src="/{{ img.local_path }}" alt="Diagram for Q{{ loop.index }}" loading="lazy">
+          {% elif img.original_url and not img.original_url.startswith('data:') %}
+            <img src="{{ img.original_url }}" alt="Diagram for Q{{ loop.index }}" loading="lazy">
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Interactive MCQ Options -->
+    {% if q.options and q.options|length > 0 %}
+      <div class="opts-list">
+        {% for opt in q.options %}
+        <button type="button" class="opt-btn" data-key="{{ opt.option }}">
+          <span class="opt-key">{{ opt.option }}</span>
+          <div>{{ opt.text|safe }}</div>
+        </button>
+        {% endfor %}
+      </div>
+    {% elif q.type == 'integer' or not q.options or q.options|length == 0 %}
+      <!-- Numerical / Integer Answer -->
+      <div class="integer-input-wrap">
+        <input type="text" class="integer-input" placeholder="Enter answer..." autocomplete="off">
+        <button type="button" class="integer-submit-btn">Check</button>
+        <span class="integer-feedback"></span>
+      </div>
+    {% endif %}
+
+    <!-- Worked Solution Accordion -->
+    <details class="soln-accordion">
+      <summary class="soln-summary">Worked Solution</summary>
+      <div class="soln-body">
+        {% if q.solution_html %}
+          {{ q.solution_html|safe }}
+        {% elif q.solution_text %}
+          <div style="white-space: pre-wrap;">{{ q.solution_text }}</div>
+        {% else %}
+          <p style="color: #888; font-style: italic;">No detailed solution available for this question.</p>
+        {% endif %}
+      </div>
+    </details>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

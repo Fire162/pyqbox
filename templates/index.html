@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}PYQBox — Practise Previous Year Questions (JEE & NEET){% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div class="portal-hero">
+  <h1 class="portal-title">PYQBox</h1>
+  <p class="portal-sub">Practise 22,359 competitive exam questions chapterwise, each with step-by-step worked solutions and local diagrams.</p>
+</div>
+
+<div class="exam-grid">
+  <!-- JEE Main -->
+  <a href="/main/" class="exam-card">
+    <span class="exam-card-badge">Engineering</span>
+    <h2 class="exam-card-title">JEE Main</h2>
+    <p class="exam-card-desc">Comprehensive question bank for JEE Main covering Physics, Chemistry, and Mathematics from 2010 to 2026.</p>
+    <div class="exam-card-meta">
+      <span>14,436 Questions</span>
+      <span>89 Chapters · 2010–2026</span>
+    </div>
+  </a>
+
+  <!-- JEE Advanced -->
+  <a href="/advanced/" class="exam-card">
+    <span class="exam-card-badge">Engineering</span>
+    <h2 class="exam-card-title">JEE Advanced</h2>
+    <p class="exam-card-desc">Challenging analytical and conceptual questions for JEE Advanced from 2006 to 2026 with full worked solutions.</p>
+    <div class="exam-card-meta">
+      <span>1,992 Questions</span>
+      <span>93 Chapters · 2006–2026</span>
+    </div>
+  </a>
+
+  <!-- NEET UG -->
+  <a href="/neet/" class="exam-card">
+    <span class="exam-card-badge">Medical</span>
+    <h2 class="exam-card-title">NEET UG</h2>
+    <p class="exam-card-desc">Complete medical entrance question bank covering Physics, Chemistry, Botany, and Zoology with anatomical diagrams.</p>
+    <div class="exam-card-meta">
+      <span>5,931 Questions</span>
+      <span>88 Chapters · 2002–2026</span>
+    </div>
+  </a>
+</div>
+{% endblock %}

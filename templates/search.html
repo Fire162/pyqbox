@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Search: {{ query }} — PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <span>Search</span>
+{% endblock %}
+
+{% block content %}
+<div class="portal-hero">
+  <h1 class="portal-title">Search Results</h1>
+  <p class="portal-sub">Found {{ results|length }} questions matching "<strong>{{ query }}</strong>"</p>
+</div>
+
+{% if results|length == 0 %}
+<div style="padding: 40px; text-align: center; color: #888; border: 1px dashed var(--hairline); border-radius: 8px;">
+  No questions found matching your search term. Try searching for a concept, formula, or exam shift.
+</div>
+{% else %}
+<div class="chapter-grid" style="grid-template-columns: 1fr;">
+  {% for r in results %}
+  <a href="/{{ r.exam }}/{{ r.subject }}/{{ r.chapter }}/#q-{{ r.q_num }}" class="chapter-item" style="padding: 16px;">
+    <div style="flex: 1;">
+      <div style="font-size: 12px; color: var(--primary-teal); font-weight: 600; margin-bottom: 4px;">
+        {{ r.exam|upper }} · {{ r.subject|capitalize }} · {{ r.chapter_name }}
+      </div>
+      <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">
+        {{ r.question_text[:180] }}...
+      </div>
+      <div style="font-size: 12px; color: #888;">
+        {{ r.details }}
+      </div>
+    </div>
+    <span class="count" style="margin-left: 16px;">Go to Q</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

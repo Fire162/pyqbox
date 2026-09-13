@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chapter_name }} PYQs — {{ exam_title }} | PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/">{{ exam_title }}</a>
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/?subject={{ current_subject }}">{{ current_subject|capitalize }}</a>
+  <span class="sep">/</span>
+  <span>{{ chapter_name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="portal-hero" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <h1 class="portal-title">{{ chapter_name }}</h1>
+    <p class="portal-sub">Practise {{ questions|length }} previous year questions chapterwise.</p>
+  </div>
+  {% if questions|length > 0 %}
+  <a href="/{{ current_exam }}/{{ current_subject }}/{{ current_chapter }}/1/" class="btn primary" style="background: var(--primary-teal); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+    Start Practising (Q1) →
+  </a>
+  {% endif %}
+</div>
+
+<!-- Ordered Question List matching Pyqbox -->
+<ol class="qindex-list">
+  {% for q in questions %}
+  <li data-year="{{ q.year }}" data-type="{{ q.type }}">
+    <a href="/{{ current_exam }}/{{ current_subject }}/{{ current_chapter }}/{{ loop.index }}/">
+      <span class="qi-n">Q{{ loop.index }}</span>
+      <span class="qi-t">{{ q.question_text[:120] }}...</span>
+      <span class="qi-p">{{ q.details if q.details else q.year }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

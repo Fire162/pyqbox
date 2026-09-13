@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam_title }} PYQs Chapterwise — PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <span>{{ exam_title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="portal-hero">
+  <h1 class="portal-title">{{ exam_title }}</h1>
+  <p class="portal-sub">{{ total_questions }} previous year questions across {{ chapters|length }} chapters.</p>
+</div>
+
+<!-- Subject Tabs -->
+<div class="tabs">
+  {% for sub in subjects %}
+  <a href="/{{ current_exam }}/?subject={{ sub }}" class="tab {% if current_subject == sub %}is-active{% endif %}">
+    {{ sub|capitalize }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Chapters Grid -->
+<div class="chapter-grid">
+  {% for ch in chapters %}
+  <a href="/{{ current_exam }}/{{ ch.subject }}/{{ ch.chapter }}/" class="chapter-item">
+    <span>{{ ch.chapter_name }}</span>
+    <span class="count">{{ ch.question_count }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

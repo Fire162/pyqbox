@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Q{{ current_index }} — {{ chapter_name }} | PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/">{{ exam_title }}</a>
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/?subject={{ current_subject }}">{{ current_subject|capitalize }}</a>
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/{{ current_subject }}/{{ current_chapter }}/">{{ chapter_name }}</a>
+  <span class="sep">/</span>
+  <span>Q{{ current_index }}</span>
+{% endblock %}
+
+{% block topbar_actions %}
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <!-- Quick Palette Dropdown -->
+    <select onchange="if(this.value) window.location.href=this.value" class="filter-select" style="font-weight: 600;">
+      {% for i in range(1, total_questions + 1) %}
+      <option value="/{{ current_exam }}/{{ current_subject }}/{{ current_chapter }}/{{ i }}/" {% if i == current_index %}selected{% endif %}>
+        Q{{ i }} of {{ total_questions }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 860px; margin: 0 auto;">
+  <article class="q-card" data-q="{{ q.id }}" data-year="{{ q.year }}" data-type="{{ q.type }}" data-key="{{ q.correct_answer }}" data-answered="false">
+    <!-- Question Header / Metadata -->
+    <div class="q-card-head">
+      <div>
+        <span class="q-num-badge">Q{{ current_index }} of {{ total_questions }}</span>
+        <span class="q-details" style="margin-left: 8px;">{{ q.details if q.details else q.year }}</span>
+      </div>
+      <span style="text-transform: uppercase; font-size: 11px; font-weight: 600; color: #888;">
+        {{ q.type }}
+      </span>
+    </div>
+
+    <!-- Question Title & Math -->
+    <div class="q-title" style="font-size: 17px; margin-bottom: 24px;">
+      {% if q.question_html %}
+        {{ q.question_html|safe }}
+      {% else %}
+        {{ q.question_text }}
+      {% endif %}
+    </div>
+
+    <!-- Question Diagrams / Figures -->
+    {% if q.images and q.images|length > 0 %}
+      <div class="q-images" style="margin: 20px 0;">
+        {% for img in q.images %}
+          {% if img.local_path %}
+            <img src="/{{ img.local_path }}" alt="Diagram for Q{{ current_index }}" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--hairline);">
+          {% elif img.original_url and not img.original_url.startswith('data:') %}
+            <img src="{{ img.original_url }}" alt="Diagram for Q{{ current_index }}" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--hairline);">
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Options Section -->
+    {% if q.options and q.options|length > 0 %}
+      <div class="opts-list" style="margin-top: 24px;">
+        {% for opt in q.options %}
+        <button type="button" class="opt-btn" data-key="{{ opt.option }}">
+          <span class="opt-key">{{ opt.option }}</span>
+          <div style="flex: 1;">{{ opt.text|safe }}</div>
+        </button>
+        {% endfor %}
+      </div>
+    {% elif q.type == 'integer' or not q.options or q.options|length == 0 %}
+      <!-- Numerical Answer Input -->
+      <div style="margin: 24px 0;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #666;">Enter Numerical Answer:</label>
+        <div class="integer-input-wrap">
+          <input type="text" class="integer-input" placeholder="Value..." autocomplete="off">
+          <button type="button" class="integer-submit-btn">Check</button>
+          <span class="integer-feedback"></span>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Worked Solution (Reveal Details) -->
+    <details class="soln-accordion" style="margin-top: 24px;">
+      <summary class="soln-summary">💡 Worked Solution</summary>
+      <div class="soln-body">
+        {% if q.solution_html %}
+          {{ q.solution_html|safe }}
+        {% elif q.solution_text %}
+          <div style="white-space: pre-wrap;">{{ q.solution_text }}</div>
+        {% else %}
+          <p style="color: #888; font-style: italic;">No detailed worked solution provided.</p>
+        {% endif %}
+      </div>
+    </details>
+  </article>
+
+  <!-- Navigation Buttons (Prev / Next) -->
+  <div class="pnav" style="display: flex; align-items: center; justify-content: space-between; margin: 32px 0; padding-top: 16px; border-top: 1px solid var(--hairline);">
+    {% if prev_url %}
+      <a class="btn" href="{{ prev_url }}" style="padding: 8px 16px; border: 1px solid var(--hairline); border-radius: 6px; text-decoration: none; color: inherit; font-size: 13px; font-weight: 500;">
+        ← Previous (Q{{ current_index - 1 }})
+      </a>
+    {% else %}
+      <div></div>
+    {% endif %}
+
+    <a class="btn" href="/{{ current_exam }}/{{ current_subject }}/{{ current_chapter }}/" style="padding: 8px 16px; border: 1px solid var(--hairline); border-radius: 6px; text-decoration: none; color: inherit; font-size: 13px; font-weight: 500;">
+      All {{ chapter_name }} ({{ total_questions }})
+    </a>
+
+    {% if next_url %}
+      <a class="btn primary" href="{{ next_url }}" style="padding: 8px 18px; background: var(--primary-teal); color: #fff; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600;">
+        Next (Q{{ current_index + 1 }}) →
+      </a>
+    {% else %}
+      <div></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Keyboard Arrow Navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    {% if prev_url %}
+    if (e.key === 'ArrowLeft') window.location.href = "{{ prev_url }}";
+    {% endif %}
+    {% if next_url %}
+    if (e.key === 'ArrowRight') window.location.href = "{{ next_url }}";
+    {% endif %}
+  });
+</script>
+{% endblock %}

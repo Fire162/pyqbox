@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}PYQBox — Practise Previous Year Questions{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/custom.css">
+  <script>
+    (function() {
+      var t = localStorage.getItem('pq_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <a class="sb-brand" href="/">
+        <span class="mark">PQ</span>
+        <span class="name">PYQBox</span>
+      </a>
+      <button type="button" class="sb-toggle" id="sb-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+        <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sb-search-wrap">
+      <form action="/search" method="get" class="sb-search-form">
+        <input type="text" name="q" class="sb-search-input" placeholder="Search 22,359 questions..." value="{{ request.args.get('q', '') }}">
+      </form>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-title">EXAMS</div>
+      <a class="sb-link {% if current_exam == 'main' %}is-active{% endif %}" href="/main/">
+        <span class="sb-icon">📘</span>
+        <span class="sb-text">JEE Main</span>
+        <span class="sb-badge">14.4k</span>
+      </a>
+      <a class="sb-link {% if current_exam == 'advanced' %}is-active{% endif %}" href="/advanced/">
+        <span class="sb-icon">🎯</span>
+        <span class="sb-text">JEE Advanced</span>
+        <span class="sb-badge">2.0k</span>
+      </a>
+      <a class="sb-link {% if current_exam == 'neet' %}is-active{% endif %}" href="/neet/">
+        <span class="sb-icon">🩺</span>
+        <span class="sb-text">NEET UG</span>
+        <span class="sb-badge">5.9k</span>
+      </a>
+    </div>
+
+    {% if sidebar_chapters %}
+    <div class="sb-section sb-chapters-scroll">
+      <div class="sb-section-title">{{ current_subject|upper if current_subject else 'CHAPTERS' }}</div>
+      {% for ch in sidebar_chapters %}
+      <a class="sb-link {% if current_chapter == ch.chapter %}is-active{% endif %}" href="/{{ current_exam }}/{{ ch.subject }}/{{ ch.chapter }}/">
+        <span class="sb-text">{{ ch.chapter_name }}</span>
+        <span class="sb-count">{{ ch.question_count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="sb-footer">
+      <button type="button" class="theme-btn" id="theme-toggle" title="Toggle Dark/Light Mode">
+        <span class="theme-icon">🌓</span>
+        <span class="theme-label">Theme</span>
+      </button>
+      <span class="sb-version">22,359 PYQs</span>
+    </div>
+  </nav>
+
+  <!-- Main Content View -->
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button type="button" class="mobile-menu-btn" id="mobile-menu-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="breadcrumbs">
+          <a href="/">Home</a>
+          {% block breadcrumbs %}{% endblock %}
+        </div>
+      </div>
+      <div class="topbar-right">
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <main class="page-container">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
