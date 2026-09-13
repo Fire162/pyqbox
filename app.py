@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import sqlite3
 import argparse
@@ -16,6 +17,51 @@ EXAM_TITLES = {
     'advanced': 'JEE Advanced',
     'neet': 'NEET UG'
 }
+
+def extract_middle_latex(s):
+    if not s or not isinstance(s, str):
+        return s
+    cleaned = s.replace('\u200b', '').replace('\ue020', '').strip()
+    if not cleaned:
+        return ""
+    
+    if '\\' not in cleaned and '_' not in cleaned and '^' not in cleaned:
+        return cleaned
+
+    # Known multi-letter triplet patterns e.g. "Both ( A ) (\mathrm{A}) ( A )"
+    cleaned = re.sub(r'\( ([A-Za-z0-9]+) \) \(\\mathrm\{([A-Za-z0-9]+)\}\) \( \1 \)', r'(\2)', cleaned)
+    
+    anchors = [m.start() for m in re.finditer(r'(\\[a-zA-Z]+|_[0-9a-zA-Z{]|\^[0-9a-zA-Z{]|\\%|\\rightarrow)', cleaned)]
+    if not anchors:
+        return cleaned
+        
+    first_anchor = anchors[0]
+    last_anchor = anchors[-1]
+
+    # Search for matching prefix and suffix
+    for i in range(first_anchor, -1, -1):
+        for j in range(len(cleaned), last_anchor, -1):
+            prefix = cleaned[:i].strip()
+            middle = cleaned[i:j].strip()
+            suffix = cleaned[j:].strip()
+            
+            if not prefix and not suffix:
+                continue
+            
+            norm_p = re.sub(r'\s+', '', prefix)
+            norm_s = re.sub(r'\s+', '', suffix)
+            
+            if norm_p and norm_s and (norm_p == norm_s or sorted(norm_p) == sorted(norm_s)):
+                return f"\\({middle}\\)"
+
+    # Fallback if no matching prefix/suffix found:
+    if ('\\' in cleaned or '_' in cleaned or '^' in cleaned) and not cleaned.startswith('\\('):
+        return f"\\({cleaned}\\)"
+    return cleaned
+
+@app.template_filter('clean_math')
+def clean_math_filter(s):
+    return extract_middle_latex(s)
 
 def get_db():
     if 'db' not in g:

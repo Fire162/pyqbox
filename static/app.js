@@ -1,6 +1,23 @@
 // Pyqbox Interactive Practice Client Engine
 
 document.addEventListener('DOMContentLoaded', function() {
+  // 0. Auto-render Math with KaTeX
+  function initKaTeX() {
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false
+      });
+    }
+  }
+  initKaTeX();
+  window.addEventListener('load', initKaTeX);
+
   // 1. Theme Toggle
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) {

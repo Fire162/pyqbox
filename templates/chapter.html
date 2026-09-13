@@ -87,7 +87,7 @@
         {% for opt in q.options %}
         <button type="button" class="opt-btn" data-key="{{ opt.option }}">
           <span class="opt-key">{{ opt.option }}</span>
-          <div>{{ opt.text|safe }}</div>
+          <div>{{ opt.text|clean_math|safe }}</div>
         </button>
         {% endfor %}
       </div>
