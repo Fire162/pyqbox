@@ -177,6 +177,8 @@ def get_all_chapters(session=None):
         m = re.match(r'^/jee/(main|advanced)/([^/]+)/([^/]+)/?$', href)
         if m:
             exam, subject, chapter_slug = m.groups()
+            if subject == 'papers' or chapter_slug.startswith('#'):
+                continue
             chapter_name = a.get_text(strip=True)
             full_url = urllib.parse.urljoin(BASE_URL, href)
             chapters.append({
@@ -212,12 +214,18 @@ def scrape_all(workers=10, save_interval=250, exam='all', limit_chapters=None, l
         print(f"Limiting to first {limit_chapters} chapters for this run.")
 
     all_q_urls = []
-    print("[2/3] Extracting individual question URLs...")
-    for idx, ch in enumerate(chapters, 1):
-        q_urls = get_chapter_question_urls(ch['url'], session=session)
-        print(f"  [{idx}/{len(chapters)}] {ch['exam']} / {ch['subject']} / {ch['chapter']}: {len(q_urls)} questions")
-        for u in q_urls:
-            all_q_urls.append((u, ch))
+    print(f"[2/3] Extracting individual question URLs across {len(chapters)} chapters in parallel...")
+    with ThreadPoolExecutor(max_workers=min(workers, 15)) as executor:
+        futures = {executor.submit(get_chapter_question_urls, ch['url'], session): ch for ch in chapters}
+        for future in as_completed(futures):
+            ch = futures[future]
+            try:
+                q_urls = future.result()
+                print(f"  {ch['exam']} / {ch['subject']} / {ch['chapter']}: {len(q_urls)} questions")
+                for u in q_urls:
+                    all_q_urls.append((u, ch))
+            except Exception as e:
+                print(f"  [ERROR] Failed extracting URLs for {ch['url']}: {e}")
 
     print(f"\nTotal question URLs collected: {len(all_q_urls)}")
 
