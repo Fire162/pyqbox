@@ -196,12 +196,16 @@ def atomic_save_json(filepath, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
     os.replace(temp_file, filepath)
 
-def scrape_all(workers=10, save_interval=250, limit_chapters=None, limit_questions=None):
+def scrape_all(workers=10, save_interval=250, exam='all', limit_chapters=None, limit_questions=None):
     session = create_session(pool_size=workers * 2)
 
     print("[1/3] Scraping chapter list...")
     chapters = get_all_chapters(session=session)
     print(f"Found {len(chapters)} chapters across JEE Main and Advanced.")
+
+    if exam in ('main', 'advanced'):
+        chapters = [c for c in chapters if c['exam'] == exam]
+        print(f"Filtered for JEE {exam.capitalize()} only: {len(chapters)} chapters.")
 
     if limit_chapters:
         chapters = chapters[:limit_chapters]
@@ -280,6 +284,7 @@ def main():
     parser = argparse.ArgumentParser(description="Scrape JEE Main & Advanced PYQs from Pyqbox.com")
     parser.add_argument("--workers", type=int, default=10, help="Number of concurrent worker threads (default: 10)")
     parser.add_argument("--save-interval", type=int, default=250, help="Incremental atomic save frequency (default: 250)")
+    parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'all'], default='all', help="Filter by exam: main, advanced, or all (default: all)")
     parser.add_argument("--limit-chapters", type=int, default=None, help="Limit number of chapters to process (for testing)")
     parser.add_argument("--limit-questions", type=int, default=None, help="Limit number of questions to process (for testing)")
 
@@ -287,6 +292,7 @@ def main():
     scrape_all(
         workers=args.workers,
         save_interval=args.save_interval,
+        exam=args.exam,
         limit_chapters=args.limit_chapters,
         limit_questions=args.limit_questions
     )
