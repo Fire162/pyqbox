@@ -123,6 +123,10 @@ def parse_question_page(q_url, chapter_meta, session=None):
             key_el = opt.find(class_='opt-key')
             key = key_el.get_text(strip=True) if key_el else opt.get('data-opt', '')
             text_el = opt.find('div') or opt
+            for katex_el in text_el.find_all(class_='katex'):
+                ann = katex_el.find('annotation')
+                if ann and ann.get_text():
+                    katex_el.replace_with(f"\\({ann.get_text().strip()}\\)")
             text = text_el.get_text(separator=" ", strip=True)
             options.append({'option': key, 'text': text})
 
