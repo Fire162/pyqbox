@@ -3,6 +3,7 @@ import re
 import json
 import time
 import argparse
+import threading
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
@@ -13,6 +14,7 @@ from bs4 import BeautifulSoup
 BASE_URL = "https://pyqbox.com"
 OUTPUT_DIR = "pyqbox_data"
 IMAGES_DIR = os.path.join(OUTPUT_DIR, "images")
+JSONL_OUTPUT = os.path.join(OUTPUT_DIR, "all_jee_pyqs.jsonl")
 JSON_OUTPUT = os.path.join(OUTPUT_DIR, "all_jee_pyqs.json")
 
 HEADERS = {
@@ -21,12 +23,12 @@ HEADERS = {
 
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-def create_session(pool_size=20):
+def create_session(pool_size=30):
     session = requests.Session()
     session.headers.update(HEADERS)
     retries = Retry(
-        total=4,
-        backoff_factor=1,
+        total=3,
+        backoff_factor=0.5,
         status_forcelist=[429, 500, 502, 503, 504],
         raise_on_status=False
     )
@@ -43,7 +45,7 @@ def fetch_html(url, session=None, retries=3):
     client = session or requests
     for attempt in range(retries):
         try:
-            resp = client.get(url, headers=HEADERS, timeout=15)
+            resp = client.get(url, headers=HEADERS, timeout=12)
             if resp.status_code == 200:
                 resp.encoding = 'utf-8'
                 return resp.text
@@ -53,10 +55,13 @@ def fetch_html(url, session=None, retries=3):
             if attempt == retries - 1:
                 print(f"[ERROR] Failed to fetch {url}: {e}")
                 return None
-            time.sleep(1)
+            time.sleep(0.5)
     return None
 
 def download_image(img_url, q_id, img_index, session=None):
+    if not img_url or img_url.startswith("data:"):
+        return img_url
+
     try:
         full_img_url = urllib.parse.urljoin(BASE_URL, img_url)
         parsed_path = urllib.parse.urlparse(full_img_url).path
@@ -68,7 +73,7 @@ def download_image(img_url, q_id, img_index, session=None):
 
         if not os.path.exists(save_path):
             client = session or requests
-            resp = client.get(full_img_url, headers=HEADERS, timeout=20)
+            resp = client.get(full_img_url, headers=HEADERS, timeout=12)
             if resp.status_code == 200:
                 with open(save_path, 'wb') as f:
                     f.write(resp.content)
@@ -77,7 +82,6 @@ def download_image(img_url, q_id, img_index, session=None):
 
         return os.path.join("images", filename)
     except Exception as e:
-        print(f"[WARNING] Failed to download image {img_url}: {e}")
         return img_url
 
 def parse_question_page(q_url, chapter_meta, session=None):
@@ -192,13 +196,69 @@ def get_all_chapters(session=None):
     unique_chapters = {c['url']: c for c in chapters}.values()
     return list(unique_chapters)
 
-def atomic_save_json(filepath, data):
-    temp_file = f"{filepath}.tmp"
-    with open(temp_file, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(temp_file, filepath)
+def export_jsonl_to_json(jsonl_path=JSONL_OUTPUT, json_path=JSON_OUTPUT):
+    if not os.path.exists(jsonl_path):
+        print(f"[ERROR] Source JSONL file not found: {jsonl_path}")
+        return
 
-def scrape_all(workers=10, save_interval=250, exam='all', limit_chapters=None, limit_questions=None):
+    print(f"Exporting {jsonl_path} to {json_path}...")
+    records = []
+    with open(jsonl_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    records.append(json.loads(line))
+                except Exception:
+                    pass
+
+    temp_file = f"{json_path}.tmp"
+    with open(temp_file, 'w', encoding='utf-8') as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, json_path)
+    print(f"Exported {len(records)} questions to {json_path} ({os.path.getsize(json_path) // (1024*1024)} MB).")
+
+def load_existing_scraped_keys():
+    scraped_urls = set()
+    scraped_ids = set()
+
+    # Check JSONL first
+    if os.path.exists(JSONL_OUTPUT):
+        try:
+            with open(JSONL_OUTPUT, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            q = json.loads(line)
+                            if 'url' in q:
+                                scraped_urls.add(q['url'])
+                            if 'id' in q and q['id']:
+                                scraped_ids.add(q['id'])
+                        except Exception:
+                            pass
+            print(f"Found existing JSONL dataset with {len(scraped_urls)} questions. Resuming...")
+            return scraped_urls, scraped_ids
+        except Exception as e:
+            print(f"[WARNING] Could not read existing JSONL: {e}")
+
+    # Fallback to JSON
+    if os.path.exists(JSON_OUTPUT):
+        try:
+            with open(JSON_OUTPUT, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                for q in data:
+                    if 'url' in q:
+                        scraped_urls.add(q['url'])
+                    if 'id' in q and q['id']:
+                        scraped_ids.add(q['id'])
+            print(f"Found existing JSON dataset with {len(scraped_urls)} questions. Resuming...")
+        except Exception as e:
+            print(f"[WARNING] Could not read existing JSON file: {e}")
+
+    return scraped_urls, scraped_ids
+
+def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None):
     session = create_session(pool_size=workers * 2)
 
     print("[1/3] Scraping chapter list...")
@@ -229,24 +289,8 @@ def scrape_all(workers=10, save_interval=250, exam='all', limit_chapters=None, l
 
     print(f"\nTotal question URLs collected: {len(all_q_urls)}")
 
-    existing_data = []
-    scraped_urls = set()
-    scraped_ids = set()
+    scraped_urls, scraped_ids = load_existing_scraped_keys()
 
-    if os.path.exists(JSON_OUTPUT):
-        try:
-            with open(JSON_OUTPUT, 'r', encoding='utf-8') as f:
-                existing_data = json.load(f)
-                for q in existing_data:
-                    if 'url' in q:
-                        scraped_urls.add(q['url'])
-                    if 'id' in q and q['id']:
-                        scraped_ids.add(q['id'])
-            print(f"Found existing dataset with {len(existing_data)} questions. Resuming...")
-        except Exception as e:
-            print(f"[WARNING] Could not read existing JSON file: {e}")
-
-    # Resume matching: match against scraped_urls or question UUID prefix
     def is_already_scraped(url):
         if url in scraped_urls:
             return True
@@ -266,40 +310,57 @@ def scrape_all(workers=10, save_interval=250, exam='all', limit_chapters=None, l
 
     if not urls_to_scrape:
         print("All target questions have already been scraped!")
+        export_jsonl_to_json()
         return
 
-    print(f"[3/3] Downloading & parsing {len(urls_to_scrape)} question pages (using {workers} workers)...")
+    print(f"[3/3] Downloading & streaming {len(urls_to_scrape)} question pages (using {workers} workers)...")
 
-    questions_data = list(existing_data)
+    file_lock = threading.Lock()
     completed = 0
+    start_time = time.time()
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {executor.submit(parse_question_page, q_url, meta, session): q_url for q_url, meta in urls_to_scrape}
-        for future in as_completed(futures):
-            completed += 1
-            res = future.result()
-            if res:
-                questions_data.append(res)
+    with open(JSONL_OUTPUT, 'a', encoding='utf-8') as out_f:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(parse_question_page, q_url, meta, session): q_url for q_url, meta in urls_to_scrape}
+            for future in as_completed(futures):
+                res = future.result()
+                if res:
+                    with file_lock:
+                        out_f.write(json.dumps(res, ensure_ascii=False) + '\n')
+                        completed += 1
+                        if completed % 25 == 0 or completed == len(urls_to_scrape):
+                            out_f.flush()
+                            elapsed = time.time() - start_time
+                            rate = completed / elapsed if elapsed > 0 else 0
+                            remaining = (len(urls_to_scrape) - completed) / rate if rate > 0 else 0
+                            print(
+                                f"  Progress: {completed}/{len(urls_to_scrape)} "
+                                f"({len(scraped_urls) + completed} total) | "
+                                f"Speed: {rate * 60:.1f} Qs/min | "
+                                f"ETA: {remaining / 60:.1f} mins",
+                                flush=True
+                            )
 
-            if completed % save_interval == 0 or completed == len(urls_to_scrape):
-                print(f"  Progress: {completed}/{len(urls_to_scrape)} processed. Saving atomically ({len(questions_data)} total)...")
-                atomic_save_json(JSON_OUTPUT, questions_data)
-
-    print(f"\nScraping complete! Final total: {len(questions_data)} questions saved to {JSON_OUTPUT}.")
+    print("\nScraping complete! Compiling final master JSON...")
+    export_jsonl_to_json()
     print("Done!")
 
 def main():
-    parser = argparse.ArgumentParser(description="Scrape JEE Main & Advanced PYQs from Pyqbox.com")
-    parser.add_argument("--workers", type=int, default=10, help="Number of concurrent worker threads (default: 10)")
-    parser.add_argument("--save-interval", type=int, default=250, help="Incremental atomic save frequency (default: 250)")
-    parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'all'], default='all', help="Filter by exam: main, advanced, or all (default: all)")
+    parser = argparse.ArgumentParser(description="High-Speed Scraper for JEE Main & Advanced PYQs")
+    parser.add_argument("--workers", type=int, default=25, help="Number of concurrent worker threads (default: 25)")
+    parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'all'], default='all', help="Filter by exam (default: all)")
     parser.add_argument("--limit-chapters", type=int, default=None, help="Limit number of chapters to process (for testing)")
     parser.add_argument("--limit-questions", type=int, default=None, help="Limit number of questions to process (for testing)")
+    parser.add_argument("--export-json", action="store_true", help="Export existing all_jee_pyqs.jsonl to all_jee_pyqs.json without scraping")
 
     args = parser.parse_args()
+
+    if args.export_json:
+        export_jsonl_to_json()
+        return
+
     scrape_all(
         workers=args.workers,
-        save_interval=args.save_interval,
         exam=args.exam,
         limit_chapters=args.limit_chapters,
         limit_questions=args.limit_questions
