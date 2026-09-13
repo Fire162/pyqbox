@@ -201,7 +201,19 @@ def get_all_chapters(session=None):
     unique_chapters = {c['url']: c for c in chapters}.values()
     return list(unique_chapters)
 
-def export_jsonl_to_json(jsonl_path=JSONL_OUTPUT, json_path=JSON_OUTPUT):
+def get_output_paths(exam):
+    if exam == 'main':
+        prefix = 'jee_mains'
+    elif exam == 'advanced':
+        prefix = 'jee_adv'
+    else:
+        prefix = 'all_jee_pyqs'
+    return os.path.join(OUTPUT_DIR, f"{prefix}.jsonl"), os.path.join(OUTPUT_DIR, f"{prefix}.json")
+
+def export_jsonl_to_json(jsonl_path=None, json_path=None, exam='all'):
+    default_jsonl, default_json = get_output_paths(exam)
+    jsonl_path = jsonl_path or default_jsonl
+    json_path = json_path or default_json
     if not os.path.exists(jsonl_path):
         print(f"[ERROR] Source JSONL file not found: {jsonl_path}")
         return
@@ -223,14 +235,14 @@ def export_jsonl_to_json(jsonl_path=JSONL_OUTPUT, json_path=JSON_OUTPUT):
     os.replace(temp_file, json_path)
     print(f"Exported {len(records)} questions to {json_path} ({os.path.getsize(json_path) // (1024*1024)} MB).")
 
-def load_existing_scraped_keys():
+def load_existing_scraped_keys(jsonl_path, json_path):
     scraped_urls = set()
     scraped_ids = set()
 
     # Check JSONL first
-    if os.path.exists(JSONL_OUTPUT):
+    if os.path.exists(jsonl_path):
         try:
-            with open(JSONL_OUTPUT, 'r', encoding='utf-8') as f:
+            with open(jsonl_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -248,9 +260,9 @@ def load_existing_scraped_keys():
             print(f"[WARNING] Could not read existing JSONL: {e}")
 
     # Fallback to JSON
-    if os.path.exists(JSON_OUTPUT):
+    if os.path.exists(json_path):
         try:
-            with open(JSON_OUTPUT, 'r', encoding='utf-8') as f:
+            with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 for q in data:
                     if 'url' in q:
@@ -294,7 +306,8 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
 
     print(f"\nTotal question URLs collected: {len(all_q_urls)}")
 
-    scraped_urls, scraped_ids = load_existing_scraped_keys()
+    jsonl_output, json_output = get_output_paths(exam)
+    scraped_urls, scraped_ids = load_existing_scraped_keys(jsonl_output, json_output)
 
     def is_already_scraped(url):
         if url in scraped_urls:
@@ -315,16 +328,16 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
 
     if not urls_to_scrape:
         print("All target questions have already been scraped!")
-        export_jsonl_to_json()
+        export_jsonl_to_json(jsonl_output, json_output, exam=exam)
         return
 
-    print(f"[3/3] Downloading & streaming {len(urls_to_scrape)} question pages (using {workers} workers)...")
+    print(f"[3/3] Downloading & streaming {len(urls_to_scrape)} question pages to {jsonl_output} (using {workers} workers)...")
 
     file_lock = threading.Lock()
     completed = 0
     start_time = time.time()
 
-    with open(JSONL_OUTPUT, 'a', encoding='utf-8') as out_f:
+    with open(jsonl_output, 'a', encoding='utf-8') as out_f:
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {executor.submit(parse_question_page, q_url, meta, session): q_url for q_url, meta in urls_to_scrape}
             for future in as_completed(futures):
@@ -346,8 +359,8 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
                                 flush=True
                             )
 
-    print("\nScraping complete! Compiling final master JSON...")
-    export_jsonl_to_json()
+    print(f"\nScraping complete! Compiling final master JSON {json_output}...")
+    export_jsonl_to_json(jsonl_output, json_output, exam=exam)
     print("Done!")
 
 def main():
@@ -356,12 +369,12 @@ def main():
     parser.add_argument("--exam", type=str, choices=['main', 'advanced', 'all'], default='all', help="Filter by exam (default: all)")
     parser.add_argument("--limit-chapters", type=int, default=None, help="Limit number of chapters to process (for testing)")
     parser.add_argument("--limit-questions", type=int, default=None, help="Limit number of questions to process (for testing)")
-    parser.add_argument("--export-json", action="store_true", help="Export existing all_jee_pyqs.jsonl to all_jee_pyqs.json without scraping")
+    parser.add_argument("--export-json", action="store_true", help="Export existing JSONL to JSON without scraping")
 
     args = parser.parse_args()
 
     if args.export_json:
-        export_jsonl_to_json()
+        export_jsonl_to_json(exam=args.exam)
         return
 
     scrape_all(
