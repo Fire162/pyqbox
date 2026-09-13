@@ -1,22 +1,41 @@
 // Pyqbox Interactive Practice Client Engine
 
-document.addEventListener('DOMContentLoaded', function() {
-  // 0. Auto-render Math with KaTeX
-  function initKaTeX() {
-    if (typeof renderMathInElement === 'function') {
-      renderMathInElement(document.body, {
-        delimiters: [
-          { left: '$$', right: '$$', display: true },
-          { left: '$', right: '$', display: false },
-          { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true }
-        ],
-        throwOnError: false
-      });
-    }
+// 0. Auto-render Math with KaTeX
+window.renderAllMath = function() {
+  if (typeof renderMathInElement === 'function') {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true }
+      ],
+      ignoredClasses: ["katex"],
+      throwOnError: false
+    });
+    return true;
   }
-  initKaTeX();
-  window.addEventListener('load', initKaTeX);
+  return false;
+};
+
+// Immediately attempt rendering
+if (!window.renderAllMath()) {
+  var katexTimer = setInterval(function() {
+    if (window.renderAllMath()) {
+      clearInterval(katexTimer);
+    }
+  }, 25);
+  setTimeout(function() { clearInterval(katexTimer); }, 5000);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.renderAllMath);
+} else {
+  window.renderAllMath();
+}
+window.addEventListener('load', window.renderAllMath);
+
+document.addEventListener('DOMContentLoaded', function() {
 
   // 1. Theme Toggle
   const themeBtn = document.getElementById('theme-toggle');
