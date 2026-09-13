@@ -3,7 +3,7 @@ import re
 import json
 import sqlite3
 import argparse
-from flask import Flask, render_template, request, send_from_directory, abort, g, jsonify
+from flask import Flask, render_template, request, send_from_directory, abort, g, jsonify, redirect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "pyqbox_data", "pyqs.db")
@@ -396,6 +396,86 @@ def paper_detail_view(exam, paper_slug):
         sidebar_chapters=sidebar_chapters,
         is_paper_view=True
     )
+
+@app.route('/<exam>/paper/<paper_slug>/<int:q_index>/')
+def paper_question_detail_view(exam, paper_slug, q_index):
+    if exam not in EXAM_TITLES:
+        abort(404)
+
+    db = get_db()
+    rows = db.execute("""
+        SELECT id, year, details, shift, type, correct_answer, question_text, question_html, 
+               options_json, solution_text, solution_html, images_json, subject, chapter, chapter_name
+        FROM questions
+        WHERE exam = ? AND paper_slug = ?
+        ORDER BY subject ASC, id ASC
+    """, (exam, paper_slug)).fetchall()
+
+    if not rows or q_index < 1 or q_index > len(rows):
+        abort(404)
+
+    target_row = rows[q_index - 1]
+    q_dict = dict(target_row)
+
+    try:
+        q_dict['options'] = json.loads(target_row['options_json']) if target_row['options_json'] else []
+    except Exception:
+        q_dict['options'] = []
+
+    try:
+        q_dict['images'] = json.loads(target_row['images_json']) if target_row['images_json'] else []
+    except Exception:
+        q_dict['images'] = []
+
+    paper_title = target_row['details'] or paper_slug
+
+    prev_url = f"/{exam}/paper/{paper_slug}/{q_index - 1}/" if q_index > 1 else None
+    next_url = f"/{exam}/paper/{paper_slug}/{q_index + 1}/" if q_index < len(rows) else None
+
+    sidebar_chapters = db.execute("""
+        SELECT chapter, chapter_name, question_count, subject 
+        FROM chapters 
+        WHERE exam = ?
+        ORDER BY question_count DESC
+        LIMIT 30
+    """, (exam,)).fetchall()
+
+    return render_template(
+        'question_view.html',
+        current_exam=exam,
+        exam_title=EXAM_TITLES[exam],
+        current_subject=target_row['subject'],
+        current_chapter=target_row['chapter'],
+        chapter_name=target_row['chapter_name'],
+        paper_title=paper_title,
+        paper_slug=paper_slug,
+        is_paper_view=True,
+        q=q_dict,
+        current_index=q_index,
+        total_questions=len(rows),
+        prev_url=prev_url,
+        next_url=next_url,
+        list_url=f"/{exam}/paper/{paper_slug}/",
+        list_title=paper_title,
+        sidebar_chapters=sidebar_chapters
+    )
+
+@app.route('/question/<q_id>/')
+def direct_question_view(q_id):
+    db = get_db()
+    row = db.execute("SELECT id, exam, subject, chapter, paper_slug FROM questions WHERE id = ?", (q_id,)).fetchone()
+    if not row:
+        abort(404)
+    exam = row['exam']
+    subject = row['subject']
+    chapter = row['chapter']
+    rows = db.execute("SELECT id FROM questions WHERE exam = ? AND subject = ? AND chapter = ? ORDER BY year DESC, id ASC", (exam, subject, chapter)).fetchall()
+    idx = 1
+    for i, r in enumerate(rows, 1):
+        if r['id'] == q_id:
+            idx = i
+            break
+    return redirect(f"/{exam}/{subject}/{chapter}/{idx}/")
 
 # ==============================================================================
 # REST API Endpoints (v1)

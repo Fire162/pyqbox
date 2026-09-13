@@ -18,8 +18,8 @@
     <p class="portal-sub">Complete past paper questions ({{ questions|length }} total questions).</p>
   </div>
   {% if questions|length > 0 %}
-  <a href="/{{ current_exam }}/{{ questions[0].subject }}/{{ questions[0].chapter }}/" class="btn primary" style="background: var(--primary-teal); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">
-    Start Practising →
+  <a href="/{{ current_exam }}/paper/{{ paper_slug }}/1/" class="btn primary" style="background: var(--primary-teal); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+    Start Practising (Q1) →
   </a>
   {% endif %}
 </div>
@@ -28,7 +28,7 @@
 <ol class="qindex-list">
   {% for q in questions %}
   <li data-type="{{ q.type }}">
-    <a href="/{{ current_exam }}/{{ q.subject }}/{{ q.chapter }}/">
+    <a href="/{{ current_exam }}/paper/{{ paper_slug }}/{{ loop.index }}/">
       <span class="qi-n">Q{{ loop.index }}</span>
       <span class="qi-t">{{ q.question_text[:110] }}...</span>
       <span class="qi-p" style="display: flex; gap: 6px; align-items: center;">
