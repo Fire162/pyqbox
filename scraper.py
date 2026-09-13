@@ -219,7 +219,7 @@ def get_all_chapters(exam='all', session=None):
     unique_chapters = {c['url']: c for c in chapters}.values()
     return list(unique_chapters)
 
-def get_output_paths(exam):
+def get_output_path(exam):
     if exam == 'main':
         prefix = 'jee_mains'
     elif exam == 'advanced':
@@ -228,12 +228,11 @@ def get_output_paths(exam):
         prefix = 'neet'
     else:
         prefix = 'all_jee_pyqs'
-    return os.path.join(OUTPUT_DIR, f"{prefix}.jsonl"), os.path.join(OUTPUT_DIR, f"{prefix}.json")
+    return os.path.join(OUTPUT_DIR, f"{prefix}.jsonl")
 
-def export_jsonl_to_json(jsonl_path=None, json_path=None, exam='all'):
-    default_jsonl, default_json = get_output_paths(exam)
-    jsonl_path = jsonl_path or default_jsonl
-    json_path = json_path or default_json
+def export_jsonl_to_json(exam='all'):
+    jsonl_path = get_output_path(exam)
+    json_path = jsonl_path.replace('.jsonl', '.json')
     if not os.path.exists(jsonl_path):
         print(f"[ERROR] Source JSONL file not found: {jsonl_path}")
         return
@@ -255,11 +254,10 @@ def export_jsonl_to_json(jsonl_path=None, json_path=None, exam='all'):
     os.replace(temp_file, json_path)
     print(f"Exported {len(records)} questions to {json_path} ({os.path.getsize(json_path) // (1024*1024)} MB).")
 
-def load_existing_scraped_keys(jsonl_path, json_path):
+def load_existing_scraped_keys(jsonl_path):
     scraped_urls = set()
     scraped_ids = set()
 
-    # Check JSONL first
     if os.path.exists(jsonl_path):
         try:
             with open(jsonl_path, 'r', encoding='utf-8') as f:
@@ -275,23 +273,8 @@ def load_existing_scraped_keys(jsonl_path, json_path):
                         except Exception:
                             pass
             print(f"Found existing JSONL dataset with {len(scraped_urls)} questions. Resuming...")
-            return scraped_urls, scraped_ids
         except Exception as e:
             print(f"[WARNING] Could not read existing JSONL: {e}")
-
-    # Fallback to JSON
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                for q in data:
-                    if 'url' in q:
-                        scraped_urls.add(q['url'])
-                    if 'id' in q and q['id']:
-                        scraped_ids.add(q['id'])
-            print(f"Found existing JSON dataset with {len(scraped_urls)} questions. Resuming...")
-        except Exception as e:
-            print(f"[WARNING] Could not read existing JSON file: {e}")
 
     return scraped_urls, scraped_ids
 
@@ -327,8 +310,8 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
 
     print(f"\nTotal question URLs collected: {len(all_q_urls)}")
 
-    jsonl_output, json_output = get_output_paths(exam)
-    scraped_urls, scraped_ids = load_existing_scraped_keys(jsonl_output, json_output)
+    jsonl_output = get_output_path(exam)
+    scraped_urls, scraped_ids = load_existing_scraped_keys(jsonl_output)
 
     def is_already_scraped(url):
         if url in scraped_urls:
@@ -349,7 +332,6 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
 
     if not urls_to_scrape:
         print("All target questions have already been scraped!")
-        export_jsonl_to_json(jsonl_output, json_output, exam=exam)
         return
 
     print(f"[3/3] Downloading & streaming {len(urls_to_scrape)} question pages to {jsonl_output} (using {workers} workers)...")
@@ -380,8 +362,7 @@ def scrape_all(workers=25, exam='all', limit_chapters=None, limit_questions=None
                                 flush=True
                             )
 
-    print(f"\nScraping complete! Compiling final master JSON {json_output}...")
-    export_jsonl_to_json(jsonl_output, json_output, exam=exam)
+    print(f"\nScraping complete! All questions saved to {jsonl_output}.")
     print("Done!")
 
 def main():
