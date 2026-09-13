@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam_title }} Papers & Shifts — PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <a href="/{{ current_exam }}/">{{ exam_title }}</a>
+  <span class="sep">/</span>
+  <span>Papers & Shifts</span>
+{% endblock %}
+
+{% block content %}
+<div class="portal-hero">
+  <h1 class="portal-title">{{ exam_title }} Papers & Shifts</h1>
+  <p class="portal-sub">Practise {{ total_papers }} full official past papers and shifts.</p>
+</div>
+
+<!-- Mode Tabs -->
+<div class="tabs">
+  <a href="/{{ current_exam }}/" class="tab">
+    📚 Chapter-wise
+  </a>
+  <a href="/{{ current_exam }}/papers/" class="tab is-active">
+    📝 Paper & Shift-wise ({{ total_papers }})
+  </a>
+</div>
+
+{% for year, papers in papers_by_year.items() %}
+<div style="margin-top: 32px;">
+  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+    <h2 style="font-size: 20px; font-weight: 700; margin: 0;">{{ year }} Papers</h2>
+    <span style="font-size: 12px; background: var(--hairline); padding: 2px 8px; border-radius: 12px; color: #666; font-weight: 600;">
+      {{ papers|length }} shift{{ 's' if papers|length != 1 else '' }}
+    </span>
+  </div>
+
+  <div class="chapter-grid">
+    {% for p in papers %}
+    <a href="/{{ current_exam }}/paper/{{ p.paper_slug }}/" class="chapter-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+      <div style="font-weight: 600; font-size: 14px; color: var(--text);">
+        {{ p.details }}
+      </div>
+      <div style="display: flex; justify-content: space-between; width: 100%; font-size: 12px; color: #888;">
+        <span>{{ p.shift }}</span>
+        <span class="count">{{ p.question_count }} Qs</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}

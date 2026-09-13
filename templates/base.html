@@ -64,7 +64,21 @@
       </a>
     </div>
 
-    {% if sidebar_chapters %}
+    {% if current_exam %}
+    <div class="sb-section">
+      <div class="sb-section-title">PRACTICE MODE</div>
+      <a class="sb-link {% if not is_paper_view %}is-active{% endif %}" href="/{{ current_exam }}/">
+        <span class="sb-icon">📚</span>
+        <span class="sb-text">Chapter-wise</span>
+      </a>
+      <a class="sb-link {% if is_paper_view %}is-active{% endif %}" href="/{{ current_exam }}/papers/">
+        <span class="sb-icon">📝</span>
+        <span class="sb-text">Paper & Shift-wise</span>
+      </a>
+    </div>
+    {% endif %}
+
+    {% if sidebar_chapters and not is_paper_view %}
     <div class="sb-section sb-chapters-scroll">
       <div class="sb-section-title">{{ current_subject|upper if current_subject else 'CHAPTERS' }}</div>
       {% for ch in sidebar_chapters %}
@@ -81,6 +95,10 @@
         <span class="theme-icon">🌓</span>
         <span class="theme-label">Theme</span>
       </button>
+      <a href="/api/docs" class="theme-btn" style="text-decoration: none;" title="REST API Docs">
+        <span class="theme-icon">⚡</span>
+        <span class="theme-label">API</span>
+      </a>
       <span class="sb-version">22,359 PYQs</span>
     </div>
   </nav>

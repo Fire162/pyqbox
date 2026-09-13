@@ -3,7 +3,7 @@ import re
 import json
 import sqlite3
 import argparse
-from flask import Flask, render_template, request, send_from_directory, abort, g
+from flask import Flask, render_template, request, send_from_directory, abort, g, jsonify
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "pyqbox_data", "pyqs.db")
@@ -144,13 +144,47 @@ def chapter_index_view(exam, subject, chapter):
     if not ch_meta:
         abort(404)
 
-    # Lightweight query for question list
-    rows = db.execute("""
-        SELECT id, year, details, type, question_text
+    # Filter & Sort parameters
+    current_sort = request.args.get('sort', 'desc')
+    current_year = request.args.get('year', '')
+    current_shift = request.args.get('shift', '')
+    current_type = request.args.get('type', '')
+
+    query = """
+        SELECT id, year, details, shift, type, question_text
         FROM questions
         WHERE exam = ? AND subject = ? AND chapter = ?
-        ORDER BY year DESC, id ASC
-    """, (exam, subject, chapter)).fetchall()
+    """
+    params = [exam, subject, chapter]
+
+    if current_year:
+        query += " AND year = ?"
+        params.append(current_year)
+    if current_shift:
+        query += " AND shift = ?"
+        params.append(current_shift)
+    if current_type:
+        query += " AND type = ?"
+        params.append(current_type)
+
+    if current_sort == 'asc':
+        query += " ORDER BY year ASC, id ASC"
+    else:
+        query += " ORDER BY year DESC, id ASC"
+
+    rows = db.execute(query, params).fetchall()
+
+    available_years = [r['year'] for r in db.execute("""
+        SELECT DISTINCT year FROM questions
+        WHERE exam = ? AND subject = ? AND chapter = ?
+        ORDER BY year DESC
+    """, (exam, subject, chapter)).fetchall()]
+
+    available_shifts = [r['shift'] for r in db.execute("""
+        SELECT DISTINCT shift FROM questions
+        WHERE exam = ? AND subject = ? AND chapter = ? AND shift IS NOT NULL AND shift != ''
+        ORDER BY year DESC, shift ASC
+    """, (exam, subject, chapter)).fetchall()]
 
     sidebar_chapters = db.execute("""
         SELECT chapter, chapter_name, question_count, subject 
@@ -167,6 +201,13 @@ def chapter_index_view(exam, subject, chapter):
         current_chapter=chapter,
         chapter_name=ch_meta['chapter_name'],
         questions=rows,
+        total_chapter_questions=ch_meta['question_count'],
+        available_years=available_years,
+        available_shifts=available_shifts,
+        current_sort=current_sort,
+        current_year=current_year,
+        current_shift=current_shift,
+        current_type=current_type,
         sidebar_chapters=sidebar_chapters
     )
 
@@ -271,6 +312,305 @@ def search():
 
     results = [dict(r) for r in rows]
     return render_template('search.html', query=query, results=results, current_exam=None)
+
+# ==============================================================================
+@app.route('/api')
+@app.route('/api/docs')
+def api_docs_view():
+    return render_template('api_docs.html', current_exam=None)
+
+@app.route('/<exam>/papers/')
+def paper_list_view(exam):
+    if exam not in EXAM_TITLES:
+        abort(404)
+
+    db = get_db()
+    rows = db.execute("""
+        SELECT year, shift, paper_slug, details, count(*) as question_count
+        FROM questions
+        WHERE exam = ? AND paper_slug IS NOT NULL AND paper_slug != ''
+        GROUP BY paper_slug
+        ORDER BY year DESC, details ASC
+    """, (exam,)).fetchall()
+
+    papers_by_year = {}
+    for r in rows:
+        y = r['year']
+        if y not in papers_by_year:
+            papers_by_year[y] = []
+        papers_by_year[y].append(dict(r))
+
+    sidebar_chapters = db.execute("""
+        SELECT chapter, chapter_name, question_count, subject 
+        FROM chapters 
+        WHERE exam = ?
+        ORDER BY question_count DESC
+        LIMIT 30
+    """, (exam,)).fetchall()
+
+    return render_template(
+        'papers.html',
+        current_exam=exam,
+        exam_title=EXAM_TITLES[exam],
+        papers_by_year=papers_by_year,
+        total_papers=len(rows),
+        sidebar_chapters=sidebar_chapters,
+        is_paper_view=True
+    )
+
+@app.route('/<exam>/paper/<paper_slug>/')
+def paper_detail_view(exam, paper_slug):
+    if exam not in EXAM_TITLES:
+        abort(404)
+
+    db = get_db()
+    rows = db.execute("""
+        SELECT id, year, details, shift, type, question_text, subject, chapter, chapter_name
+        FROM questions
+        WHERE exam = ? AND paper_slug = ?
+        ORDER BY subject ASC, id ASC
+    """, (exam, paper_slug)).fetchall()
+
+    if not rows:
+        abort(404)
+
+    paper_title = rows[0]['details'] or paper_slug
+    year = rows[0]['year']
+
+    sidebar_chapters = db.execute("""
+        SELECT chapter, chapter_name, question_count, subject 
+        FROM chapters 
+        WHERE exam = ?
+        ORDER BY question_count DESC
+        LIMIT 30
+    """, (exam,)).fetchall()
+
+    return render_template(
+        'paper_index.html',
+        current_exam=exam,
+        exam_title=EXAM_TITLES[exam],
+        paper_title=paper_title,
+        paper_slug=paper_slug,
+        year=year,
+        questions=rows,
+        sidebar_chapters=sidebar_chapters,
+        is_paper_view=True
+    )
+
+# ==============================================================================
+# REST API Endpoints (v1)
+# ==============================================================================
+
+@app.route('/api/v1/exams', methods=['GET'])
+def api_exams():
+    db = get_db()
+    exams = []
+    for exam_id, title in EXAM_TITLES.items():
+        total = db.execute("SELECT count(*) as c FROM questions WHERE exam = ?", (exam_id,)).fetchone()['c']
+        subjects = [r['subject'] for r in db.execute("SELECT DISTINCT subject FROM chapters WHERE exam = ? ORDER BY subject", (exam_id,)).fetchall()]
+        years = [r['year'] for r in db.execute("SELECT DISTINCT year FROM questions WHERE exam = ? ORDER BY year DESC", (exam_id,)).fetchall()]
+        exams.append({
+            'id': exam_id,
+            'title': title,
+            'question_count': total,
+            'subjects': subjects,
+            'years': years
+        })
+    return jsonify({'exams': exams})
+
+@app.route('/api/v1/chapters', methods=['GET'])
+def api_chapters():
+    exam = request.args.get('exam')
+    subject = request.args.get('subject')
+    db = get_db()
+    query = "SELECT exam, subject, chapter, chapter_name, question_count FROM chapters WHERE 1=1"
+    params = []
+    if exam:
+        query += " AND exam = ?"
+        params.append(exam)
+    if subject:
+        query += " AND subject = ?"
+        params.append(subject)
+    query += " ORDER BY exam, subject, question_count DESC"
+    rows = db.execute(query, params).fetchall()
+    return jsonify({'chapters': [dict(r) for r in rows]})
+
+@app.route('/api/v1/papers', methods=['GET'])
+def api_papers():
+    exam = request.args.get('exam')
+    year = request.args.get('year')
+    db = get_db()
+    query = """
+        SELECT exam, year, shift, paper_slug, details, count(*) as question_count
+        FROM questions
+        WHERE paper_slug IS NOT NULL AND paper_slug != ''
+    """
+    params = []
+    if exam:
+        query += " AND exam = ?"
+        params.append(exam)
+    if year:
+        query += " AND year = ?"
+        params.append(year)
+    query += " GROUP BY paper_slug ORDER BY year DESC, details ASC"
+    rows = db.execute(query, params).fetchall()
+    return jsonify({'papers': [dict(r) for r in rows]})
+
+@app.route('/api/v1/questions', methods=['GET'])
+def api_questions():
+    exam = request.args.get('exam')
+    subject = request.args.get('subject')
+    chapter = request.args.get('chapter')
+    year = request.args.get('year')
+    shift = request.args.get('shift')
+    paper = request.args.get('paper')
+    qtype = request.args.get('type')
+    sort = request.args.get('sort', 'year_desc')
+    page = max(1, request.args.get('page', 1, type=int))
+    limit = min(100, max(1, request.args.get('limit', 20, type=int)))
+    offset = (page - 1) * limit
+
+    db = get_db()
+    base_where = "WHERE 1=1"
+    params = []
+    if exam:
+        base_where += " AND exam = ?"
+        params.append(exam)
+    if subject:
+        base_where += " AND subject = ?"
+        params.append(subject)
+    if chapter:
+        base_where += " AND chapter = ?"
+        params.append(chapter)
+    if year:
+        base_where += " AND year = ?"
+        params.append(year)
+    if shift:
+        base_where += " AND shift = ?"
+        params.append(shift)
+    if paper:
+        base_where += " AND paper_slug = ?"
+        params.append(paper)
+    if qtype:
+        base_where += " AND type = ?"
+        params.append(qtype)
+
+    total = db.execute(f"SELECT count(*) as c FROM questions {base_where}", params).fetchone()['c']
+
+    order_by = "ORDER BY year ASC, id ASC" if sort == 'year_asc' else "ORDER BY year DESC, id ASC"
+
+    query = f"""
+        SELECT id, exam, subject, chapter, chapter_name, year, details, shift, paper_slug, type, question_text, images_json
+        FROM questions
+        {base_where}
+        {order_by}
+        LIMIT ? OFFSET ?
+    """
+    rows = db.execute(query, params + [limit, offset]).fetchall()
+
+    questions = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d['images'] = json.loads(d['images_json']) if d['images_json'] else []
+        except Exception:
+            d['images'] = []
+        del d['images_json']
+        questions.append(d)
+
+    return jsonify({
+        'total': total,
+        'page': page,
+        'limit': limit,
+        'total_pages': (total + limit - 1) // limit if limit else 1,
+        'questions': questions
+    })
+
+@app.route('/api/v1/questions/<q_id>', methods=['GET'])
+def api_question_detail(q_id):
+    db = get_db()
+    row = db.execute("SELECT * FROM questions WHERE id = ?", (q_id,)).fetchone()
+    if not row:
+        return jsonify({'error': 'Question not found'}), 404
+    d = dict(row)
+    try:
+        d['options'] = json.loads(d['options_json']) if d['options_json'] else []
+    except Exception:
+        d['options'] = []
+    try:
+        d['images'] = json.loads(d['images_json']) if d['images_json'] else []
+    except Exception:
+        d['images'] = []
+    del d['options_json']
+    del d['images_json']
+    return jsonify(d)
+
+@app.route('/api/v1/check-answer', methods=['POST'])
+def api_check_answer():
+    data = request.get_json(force=True, silent=True) or {}
+    q_id = data.get('question_id')
+    selected = str(data.get('selected_answer', '')).strip()
+
+    if not q_id:
+        return jsonify({'error': 'question_id is required'}), 400
+
+    db = get_db()
+    row = db.execute("SELECT id, correct_answer, type, solution_text, solution_html FROM questions WHERE id = ?", (q_id,)).fetchone()
+    if not row:
+        return jsonify({'error': 'Question not found'}), 404
+
+    correct = (row['correct_answer'] or '').strip()
+    is_correct = False
+    if row['type'] == 'integer':
+        try:
+            is_correct = float(selected) == float(correct)
+        except ValueError:
+            is_correct = selected == correct
+    else:
+        is_correct = selected.upper() == correct.upper()
+
+    return jsonify({
+        'question_id': q_id,
+        'is_correct': is_correct,
+        'correct_answer': correct,
+        'solution_text': row['solution_text'],
+        'solution_html': row['solution_html']
+    })
+
+@app.route('/api/v1/search', methods=['GET'])
+def api_search():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({'query': '', 'total': 0, 'results': []})
+
+    db = get_db()
+    clean_q = ''.join(c if c.isalnum() or c.isspace() else ' ' for c in query).strip()
+    if not clean_q:
+        return jsonify({'query': query, 'total': 0, 'results': []})
+
+    fts_query = ' '.join(f'"{word}"' for word in clean_q.split())
+    try:
+        rows = db.execute("""
+            SELECT q.id, q.exam, q.subject, q.chapter, q.chapter_name, q.year, q.details, q.shift, q.type, q.question_text
+            FROM questions_fts f
+            JOIN questions q ON q.id = f.id
+            WHERE questions_fts MATCH ?
+            LIMIT 50
+        """, (fts_query,)).fetchall()
+    except Exception:
+        like_pattern = f"%{clean_q}%"
+        rows = db.execute("""
+            SELECT id, exam, subject, chapter, chapter_name, year, details, shift, type, question_text
+            FROM questions
+            WHERE question_text LIKE ? OR details LIKE ?
+            LIMIT 50
+        """, (like_pattern, like_pattern)).fetchall()
+
+    return jsonify({
+        'query': query,
+        'total': len(rows),
+        'results': [dict(r) for r in rows]
+    })
 
 def main():
     parser = argparse.ArgumentParser(description="Pyqbox Practice Web Application")

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}REST API Documentation — PYQBox{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="sep">/</span>
+  <span>REST API Documentation</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+  <div class="portal-hero">
+    <h1 class="portal-title">⚡ PYQBox REST API (v1)</h1>
+    <p class="portal-sub">High-performance JSON API serving 22,359 questions across JEE Main, JEE Advanced, and NEET UG with full shift metadata, year sorting, and LaTeX solutions.</p>
+  </div>
+
+  <!-- Endpoints Section -->
+  <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px;">
+
+    <!-- 1. Exams API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/exams</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns all available exams, total question counts, subjects, and available years.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s http://localhost:5050/api/v1/exams
+      </div>
+    </div>
+
+    <!-- 2. Chapters API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/chapters?exam=main&subject=physics</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns chapters filtered by exam and subject with question counts.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s "http://localhost:5050/api/v1/chapters?exam=main&subject=physics"
+      </div>
+    </div>
+
+    <!-- 3. Papers & Shifts API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/papers?exam=main&year=2026</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns all 270 official papers & shifts with question counts and slugs.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s "http://localhost:5050/api/v1/papers?exam=main&year=2026"
+      </div>
+    </div>
+
+    <!-- 4. Questions List & Filter API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/questions?exam=main&chapter=alternating-current&sort=year_desc&limit=10</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+        Paginated questions with sorting (<code>sort=year_desc</code> / <code>sort=year_asc</code>) and filters (<code>year</code>, <code>shift</code>, <code>paper</code>, <code>type</code>).
+      </p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s "http://localhost:5050/api/v1/questions?exam=main&year=2026&sort=year_desc&limit=5"
+      </div>
+    </div>
+
+    <!-- 5. Question Detail API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/questions/:id</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns full question payload including clean LaTeX options, diagrams, correct answer, and worked solution.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s "http://localhost:5050/api/v1/questions/0928dd2e-7799-4199-8e1c-1e07132db37e"
+      </div>
+    </div>
+
+    <!-- 6. Check Answer API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #3B82F6; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">POST</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/check-answer</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Verifies student option or numerical answer against correct key and returns worked solution.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -X POST http://localhost:5050/api/v1/check-answer -H "Content-Type: application/json" -d '{"question_id": "0928dd2e-7799-4199-8e1c-1e07132db37e", "selected_answer": "A"}'
+      </div>
+    </div>
+
+    <!-- 7. Full-text Search API -->
+    <div class="q-card" style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="background: #10B981; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;">GET</span>
+        <code style="font-size: 15px; font-weight: 600;">/api/v1/search?q=inductance</code>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 12px;">FTS5 indexed search querying across 22,359 questions in &lt;10ms.</p>
+      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+        curl -s "http://localhost:5050/api/v1/search?q=capacitor"
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
