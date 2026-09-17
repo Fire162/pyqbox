@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}{{ chapter_name }} — {{ exam_title }} PYQs | PYQBox{% endblock %}
+{% block title %}{{ chapter_name }} — {{ exam_title }} Chapterwise PYQs | PYQBox{% endblock %}
+
+{% block meta_description %}Practise {{ questions|length }}+ authentic {{ exam_title }} previous year questions (PYQs) for {{ chapter_name }} ({{ current_subject|capitalize }}). Includes step-by-step KaTeX math solutions, answer checking, and year filters on PYQBox.{% endblock %}
+
+{% block meta_keywords %}{{ chapter_name }} PYQs, {{ chapter_name }} {{ exam_title }}, {{ chapter_name }} previous year questions, {{ current_subject }} {{ exam_title }} PYQ practice, PYQBox, Wegenz{% endblock %}
 
 {% block breadcrumbs %}
   <span class="sep">/</span>
@@ -12,6 +16,16 @@
 {% endblock %}
 
 {% block content %}
+<div class="wegenz-cta-banner">
+  <div>
+    <span class="wegenz-cta-banner-title">⚡ Want to practice custom sample questions or timed CBT drills?</span>
+    <span class="wegenz-cta-banner-desc">Practice with 170,000+ sample questions, countdown timers, challenge codes & full CBT simulation on Wegenz.</span>
+  </div>
+  <a href="https://wegenz.in/" target="_blank" rel="noopener" class="wegenz-cta-banner-btn">
+    <span>Practice Sample Questions & Mocks &rarr;</span>
+  </a>
+</div>
+
 <div class="question-header-info">
   <div>
     <h1 class="chapter-title">{{ chapter_name }}</h1>

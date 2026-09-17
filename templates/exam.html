@@ -13,6 +13,19 @@
   <p class="portal-sub">{{ total_questions }} previous year questions across {{ chapters|length }} chapters.</p>
 </div>
 
+<!-- Primary Mode Tabs -->
+<div class="tabs" style="margin-bottom: 20px;">
+  <a href="/{{ current_exam }}/" class="tab is-active">
+    📚 Chapter-wise
+  </a>
+  <a href="/{{ current_exam }}/papers/" class="tab">
+    📝 Paper & Shift-wise
+  </a>
+  <a href="/{{ current_exam }}/analysis/" class="tab">
+    📊 Research & Trends
+  </a>
+</div>
+
 <!-- Subject Tabs -->
 <div class="tabs">
   {% for sub in subjects %}

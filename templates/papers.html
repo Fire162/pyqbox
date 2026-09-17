@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}{{ exam_title }} Papers & Shifts — PYQBox{% endblock %}
+{% block title %}{{ exam_title }} Official Papers & Shifts — PYQBox{% endblock %}
+
+{% block meta_description %}Browse and practise {{ total_papers }} full official {{ exam_title }} past exam papers and shifts. Complete questions with worked KaTeX solutions and multi-year paper archives on PYQBox.{% endblock %}
+
+{% block meta_keywords %}{{ exam_title }} past papers, {{ exam_title }} shifts, {{ exam_title }} official question papers, PYQBox, Wegenz{% endblock %}
 
 {% block breadcrumbs %}
   <span class="sep">/</span>
@@ -22,6 +26,9 @@
   </a>
   <a href="/{{ current_exam }}/papers/" class="tab is-active">
     📝 Paper & Shift-wise ({{ total_papers }})
+  </a>
+  <a href="/{{ current_exam }}/analysis/" class="tab">
+    📊 Research & Trends
   </a>
 </div>
 

@@ -2,38 +2,69 @@
 
 {% block title %}Search: {{ query }} — PYQBox{% endblock %}
 
+{% block meta_description %}Search results for "{{ query }}" across 22,359 authentic JEE Main, JEE Advanced, and NEET UG previous year questions with step-by-step KaTeX solutions on PYQBox.{% endblock %}
+
 {% block breadcrumbs %}
   <span class="sep">/</span>
   <span>Search</span>
+  <span class="sep">/</span>
+  <span>"{{ query }}"</span>
 {% endblock %}
 
 {% block content %}
-<div class="portal-hero">
-  <h1 class="portal-title">Search Results</h1>
-  <p class="portal-sub">Found {{ results|length }} questions matching "<strong>{{ query }}</strong>"</p>
-</div>
+<section class="wegenz-hero-card" style="margin-bottom: 2rem;">
+  <div class="wegenz-hero-content" style="max-width: 100%;">
+    <div class="wegenz-hero-chip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <span>Question Search Archive</span>
+    </div>
+    <h1 class="wegenz-hero-title" style="font-size: 2.2rem; margin-top: 0.5rem;">
+      Search: "{{ query }}"<span class="dot-accent">.</span>
+    </h1>
+    <p class="wegenz-hero-desc">
+      Found <strong>{{ results|length }}</strong> authentic previous year questions matching your query. Click any question card to inspect full step-by-step KaTeX solutions.
+    </p>
+  </div>
+</section>
 
 {% if results|length == 0 %}
-<div style="padding: 40px; text-align: center; color: #888; border: 1px dashed var(--hairline); border-radius: 8px;">
-  No questions found matching your search term. Try searching for a concept, formula, or exam shift.
+<div style="padding: 48px; text-align: center; color: var(--ink-3); background: var(--card-bg); border: 1px dashed var(--hairline); border-radius: 16px;">
+  <p style="font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 8px;">No questions found</p>
+  <p style="font-size: 14px;">Try searching for a different concept (e.g. "projectile", "entropy", "resonance", "optics"), or browse by chapter from the sidebar.</p>
 </div>
 {% else %}
-<div class="chapter-grid" style="grid-template-columns: 1fr;">
+<div class="search-results-list">
   {% for r in results %}
-  <a href="/{{ r.exam }}/{{ r.subject }}/{{ r.chapter }}/#q-{{ r.q_num }}" class="chapter-item" style="padding: 16px;">
-    <div style="flex: 1;">
-      <div style="font-size: 12px; color: var(--primary-teal); font-weight: 600; margin-bottom: 4px;">
-        {{ r.exam|upper }} · {{ r.subject|capitalize }} · {{ r.chapter_name }}
-      </div>
-      <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">
-        {{ r.question_text[:180] }}...
-      </div>
-      <div style="font-size: 12px; color: #888;">
-        {{ r.details }}
-      </div>
+  <article class="search-result-card">
+    <div class="search-card-meta">
+      <span class="search-exam-badge">{{ r.exam|upper }}</span>
+      <span class="search-meta-pill">{{ r.subject|capitalize }}</span>
+      <span class="search-meta-dot">·</span>
+      <a href="/{{ r.exam }}/{{ r.subject }}/{{ r.chapter }}/" class="search-chapter-pill" title="View all questions in {{ r.chapter_name }}">
+        📚 {{ r.chapter_name }}
+      </a>
+      <span class="search-meta-dot">·</span>
+      <span class="search-shift-badge">{{ r.details }}</span>
     </div>
-    <span class="count" style="margin-left: 16px;">Go to Q</span>
-  </a>
+
+    <a href="/question/{{ r.id }}/" class="search-card-question-link" title="Open Question &amp; Solution">
+      <div class="search-card-question">
+        {{ r.question_text[:240] }}{% if r.question_text|length > 240 %}...{% endif %}
+      </div>
+    </a>
+
+    <div class="search-card-actions">
+      <a href="/question/{{ r.id }}/" class="btn-view-q" title="Open this specific question with full solution">
+        <span>⚡ View Question &amp; Solution &rarr;</span>
+      </a>
+      <a href="/{{ r.exam }}/{{ r.subject }}/{{ r.chapter }}/" class="btn-view-chapter" title="Browse full chapter">
+        <span>Browse Chapter &rarr;</span>
+      </a>
+    </div>
+  </article>
   {% endfor %}
 </div>
 {% endif %}

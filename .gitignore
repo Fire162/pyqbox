@@ -22,3 +22,7 @@ pyqbox_data/
 .env
 .idea/
 .vscode/
+
+# Agent Memory
+AGENT_HISTORY.md
+

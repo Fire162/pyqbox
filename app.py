@@ -94,10 +94,32 @@ def close_db(error):
 
 @app.after_request
 def add_cache_headers(response):
-    if response.mimetype == 'text/html':
+    path = request.path
+    # 1. Answer checking or POST requests must never be cached
+    if request.method not in ('GET', 'HEAD') or path.startswith('/api/v1/check-answer'):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+        return response
+
+    # 2. Static files (JS, CSS, fonts, SVG) - 1 year immutable
+    if path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        return response
+
+    # 3. Question diagrams / images - 30 days at Cloudflare edge and browser
+    if path.startswith('/images/'):
+        response.headers['Cache-Control'] = 'public, max-age=2592000, s-maxage=2592000'
+        return response
+
+    # 4. API Endpoints (analytics, exams, chapters, questions list) - 30 days edge cache, 1 hour browser
+    if path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'public, max-age=3600, s-maxage=2592000, stale-while-revalidate=604800'
+        return response
+
+    # 5. HTML Question views, Paper views, Chapter views, Analysis - 30 days edge cache, 1 hour browser
+    if response.mimetype == 'text/html':
+        response.headers['Cache-Control'] = 'public, max-age=3600, s-maxage=2592000, stale-while-revalidate=604800'
+        return response
+
     return response
 
 @app.route('/favicon.ico')
@@ -109,7 +131,77 @@ def serve_image(filename):
     file_path = os.path.join(IMAGES_DIR, filename)
     if not os.path.exists(file_path):
         abort(404)
-    return send_from_directory(IMAGES_DIR, filename)
+    response = send_from_directory(IMAGES_DIR, filename)
+    response.headers['Cache-Control'] = 'public, max-age=2592000, s-maxage=2592000'
+    return response
+
+@app.route('/robots.txt')
+def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n\n"
+        "Sitemap: https://pyqs.wegenz.in/sitemap.xml\n"
+    )
+    res = app.response_class(content, mimetype='text/plain')
+    res.headers['Cache-Control'] = 'public, max-age=86400, s-maxage=86400'
+    return res
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    db = get_db()
+    base_urls = [
+        ('https://pyqs.wegenz.in/', '1.0', 'daily'),
+        ('https://pyqs.wegenz.in/main/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/advanced/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/neet/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/main/papers/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/advanced/papers/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/neet/papers/', '0.9', 'weekly'),
+        ('https://pyqs.wegenz.in/analysis/', '0.8', 'monthly'),
+        ('https://pyqs.wegenz.in/main/analysis/', '0.8', 'monthly'),
+        ('https://pyqs.wegenz.in/advanced/analysis/', '0.8', 'monthly'),
+        ('https://pyqs.wegenz.in/neet/analysis/', '0.8', 'monthly'),
+    ]
+
+    chapters = db.execute('''
+        SELECT DISTINCT exam, subject, chapter 
+        FROM questions 
+        WHERE chapter IS NOT NULL AND chapter != ''
+        ORDER BY exam, subject, chapter
+    ''').fetchall()
+
+    papers = db.execute('''
+        SELECT DISTINCT exam, paper_slug 
+        FROM questions 
+        WHERE paper_slug IS NOT NULL AND paper_slug != ''
+        ORDER BY exam, paper_slug
+    ''').fetchall()
+
+    xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+
+    for url, priority, freq in base_urls:
+        xml_parts.append(f'  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{priority}</priority></url>')
+
+    for ch in chapters:
+        exam = ch['exam']
+        subject = ch['subject']
+        chapter = ch['chapter']
+        url = f'https://pyqs.wegenz.in/{exam}/{subject}/{chapter}/'
+        xml_parts.append(f'  <url><loc>{url}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>')
+
+    for p in papers:
+        exam = p['exam']
+        slug = p['paper_slug']
+        url = f'https://pyqs.wegenz.in/{exam}/paper/{slug}/'
+        xml_parts.append(f'  <url><loc>{url}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>')
+
+    xml_parts.append('</urlset>')
+    xml_content = '\n'.join(xml_parts)
+
+    res = app.response_class(xml_content, mimetype='application/xml')
+    res.headers['Cache-Control'] = 'public, max-age=86400, s-maxage=2592000'
+    return res
 
 @app.route('/')
 def index():
@@ -171,7 +263,18 @@ def chapter_index_view(exam, subject, chapter):
 
     # Filter & Sort parameters
     current_sort = request.args.get('sort', 'desc')
-    current_year = request.args.get('year', '')
+    raw_years = request.args.getlist('year') + request.args.getlist('years')
+    selected_years = []
+    for y_val in raw_years:
+        for part in str(y_val).split(','):
+            part = part.strip()
+            if part.isdigit():
+                y_int = int(part)
+                if y_int not in selected_years:
+                    selected_years.append(y_int)
+    selected_years.sort(reverse=True)
+
+    current_year = str(selected_years[0]) if len(selected_years) == 1 else ''
     current_shift = request.args.get('shift', '')
     current_type = request.args.get('type', '')
 
@@ -182,9 +285,13 @@ def chapter_index_view(exam, subject, chapter):
     """
     params = [exam, subject, chapter]
 
-    if current_year:
+    if selected_years:
+        placeholders = ', '.join(['?'] * len(selected_years))
+        query += f" AND year IN ({placeholders})"
+        params.extend([str(y) for y in selected_years])
+    elif current_year:
         query += " AND year = ?"
-        params.append(current_year)
+        params.append(str(current_year))
     if current_shift:
         query += " AND shift = ?"
         params.append(current_shift)
@@ -255,19 +362,19 @@ def question_detail_view(exam, subject, chapter, q_index):
     if q_index < 1 or q_index > total_q:
         abort(404)
 
-    # Fetch all questions in order to get the specific one
-    rows = db.execute("""
+    # Fetch only the targeted question using LIMIT 1 OFFSET
+    target_row = db.execute("""
         SELECT id, year, details, type, correct_answer, question_text, question_html, 
                options_json, solution_text, solution_html, images_json
         FROM questions
         WHERE exam = ? AND subject = ? AND chapter = ?
         ORDER BY year DESC, id ASC
-    """, (exam, subject, chapter)).fetchall()
+        LIMIT 1 OFFSET ?
+    """, (exam, subject, chapter, q_index - 1)).fetchone()
 
-    if not rows or q_index > len(rows):
+    if not target_row:
         abort(404)
 
-    target_row = rows[q_index - 1]
     q_dict = dict(target_row)
 
     try:
@@ -281,7 +388,7 @@ def question_detail_view(exam, subject, chapter, q_index):
         q_dict['images'] = []
 
     prev_url = f"/{exam}/{subject}/{chapter}/{q_index - 1}/" if q_index > 1 else None
-    next_url = f"/{exam}/{subject}/{chapter}/{q_index + 1}/" if q_index < len(rows) else None
+    next_url = f"/{exam}/{subject}/{chapter}/{q_index + 1}/" if q_index < total_q else None
 
     sidebar_chapters = db.execute("""
         SELECT chapter, chapter_name, question_count, subject 
@@ -299,7 +406,7 @@ def question_detail_view(exam, subject, chapter, q_index):
         chapter_name=ch_meta['chapter_name'],
         q=q_dict,
         current_index=q_index,
-        total_questions=len(rows),
+        total_questions=total_q,
         prev_url=prev_url,
         next_url=next_url,
         sidebar_chapters=sidebar_chapters
@@ -501,6 +608,154 @@ def direct_question_view(q_id):
             idx = i
             break
     return redirect(f"/{exam}/{subject}/{chapter}/{idx}/")
+
+@app.route('/analysis/')
+def global_analysis_redirect():
+    return redirect('/main/analysis/')
+
+@app.route('/<exam>/analysis/')
+def exam_analysis_view(exam):
+    if exam not in EXAM_TITLES:
+        abort(404)
+
+    db = get_db()
+
+    # Available filter options
+    years_rows = db.execute("SELECT DISTINCT year FROM questions WHERE exam = ? AND year IS NOT NULL ORDER BY year DESC", (exam,)).fetchall()
+    available_years = [int(r['year']) for r in years_rows if str(r['year']).isdigit()]
+
+    subjects_rows = db.execute("SELECT DISTINCT subject FROM questions WHERE exam = ? AND subject IS NOT NULL ORDER BY subject ASC", (exam,)).fetchall()
+    available_subjects = [r['subject'] for r in subjects_rows]
+
+    # Selected filter values (supports multiple years via repeated or comma-separated query params)
+    raw_years = request.args.getlist('year') + request.args.getlist('years')
+    selected_years = []
+    for y_val in raw_years:
+        for part in str(y_val).split(','):
+            part = part.strip()
+            if part.isdigit():
+                y_int = int(part)
+                if y_int in available_years and y_int not in selected_years:
+                    selected_years.append(y_int)
+    selected_years.sort(reverse=True)
+
+    current_sub = request.args.get('subject', '').strip().lower()
+    if current_sub and current_sub not in available_subjects:
+        current_sub = None
+
+    # Base filter criteria
+    where_clauses = ["exam = ?"]
+    params = [exam]
+    if selected_years:
+        placeholders = ', '.join(['?'] * len(selected_years))
+        where_clauses.append(f"year IN ({placeholders})")
+        params.extend([str(y) for y in selected_years])
+    if current_sub:
+        where_clauses.append("subject = ?")
+        params.append(current_sub)
+
+    where_str = " AND ".join(where_clauses)
+
+    # 1. Total filtered questions
+    total_row = db.execute(f"SELECT COUNT(*) as c FROM questions WHERE {where_str}", params).fetchone()
+    total_filtered_questions = total_row['c'] if total_row else 0
+
+    # 2. High-yield chapter statistics
+    chapter_rows = db.execute(f"""
+        SELECT chapter, chapter_name, subject, COUNT(*) as count
+        FROM questions
+        WHERE {where_str}
+        GROUP BY chapter, chapter_name, subject
+        ORDER BY count DESC
+    """, params).fetchall()
+
+    chapter_stats = []
+    for r in chapter_rows:
+        count = r['count']
+        pct = round((count / total_filtered_questions * 100), 1) if total_filtered_questions > 0 else 0
+        chapter_stats.append({
+            'chapter': r['chapter'],
+            'chapter_name': r['chapter_name'] or r['chapter'].replace('-', ' ').title(),
+            'subject': r['subject'],
+            'count': count,
+            'percentage': pct
+        })
+
+    top_chapter = chapter_stats[0] if chapter_stats else None
+    top_15 = chapter_stats[:15]
+
+    # 3. Subject distribution
+    sub_where = ["exam = ?"]
+    sub_params = [exam]
+    if selected_years:
+        placeholders = ', '.join(['?'] * len(selected_years))
+        sub_where.append(f"year IN ({placeholders})")
+        sub_params.extend([str(y) for y in selected_years])
+    sub_dist_rows = db.execute(f"""
+        SELECT subject, COUNT(*) as count
+        FROM questions
+        WHERE {" AND ".join(sub_where)}
+        GROUP BY subject
+        ORDER BY count DESC
+    """, sub_params).fetchall()
+    subject_dist = {r['subject']: r['count'] for r in sub_dist_rows}
+
+    # 4. Historical Year trend
+    yt_where = ["exam = ?"]
+    yt_params = [exam]
+    if current_sub:
+        yt_where.append("subject = ?")
+        yt_params.append(current_sub)
+    yt_rows = db.execute(f"""
+        SELECT year, COUNT(*) as count
+        FROM questions
+        WHERE {" AND ".join(yt_where)} AND year IS NOT NULL
+        GROUP BY year
+        ORDER BY year ASC
+    """, yt_params).fetchall()
+    year_trends = [{
+        'year': r['year'], 
+        'count': r['count'], 
+        'selected': (r['year'] in selected_years) if selected_years else True
+    } for r in yt_rows]
+
+    # 5. Question type distribution
+    type_rows = db.execute(f"""
+        SELECT type, COUNT(*) as count
+        FROM questions
+        WHERE {where_str} AND type IS NOT NULL
+        GROUP BY type
+        ORDER BY count DESC
+    """, params).fetchall()
+    type_dist = {r['type']: r['count'] for r in type_rows}
+
+    # Sidebar chapters for exam
+    sidebar_chapters = db.execute("""
+        SELECT exam, subject, chapter, chapter_name, question_count 
+        FROM chapters 
+        WHERE exam = ?
+        ORDER BY question_count DESC
+    """, (exam,)).fetchall()
+
+    return render_template(
+        'analysis.html',
+        exam_title=EXAM_TITLES[exam],
+        current_exam=exam,
+        selected_years=selected_years,
+        current_year=selected_years[0] if len(selected_years) == 1 else None,
+        current_subject=current_sub,
+        available_years=available_years,
+        available_subjects=available_subjects,
+        total_filtered_questions=total_filtered_questions,
+        top_chapter=top_chapter,
+        chapter_stats=chapter_stats,
+        top_15_json=json.dumps(top_15),
+        subject_dist_json=json.dumps(subject_dist),
+        year_trends_json=json.dumps(year_trends),
+        type_dist_json=json.dumps(type_dist),
+        sidebar_chapters=sidebar_chapters,
+        is_analysis_view=True
+    )
 
 # ==============================================================================
 # REST API Endpoints (v1)
@@ -715,6 +970,132 @@ def api_search():
         'query': query,
         'total': len(rows),
         'results': [dict(r) for r in rows]
+    })
+
+@app.route('/api/v1/analytics', methods=['GET'])
+def api_analytics():
+    exam = request.args.get('exam', 'main').strip().lower()
+    if exam not in EXAM_TITLES:
+        return jsonify({'error': f'Invalid exam: {exam}. Must be one of {list(EXAM_TITLES.keys())}'}), 400
+
+    raw_years = request.args.getlist('year') + request.args.getlist('years')
+    selected_years = []
+    for y_val in raw_years:
+        for part in str(y_val).split(','):
+            part = part.strip()
+            if part.isdigit():
+                y_int = int(part)
+                if y_int not in selected_years:
+                    selected_years.append(y_int)
+    selected_years.sort(reverse=True)
+    subject = request.args.get('subject', '').strip().lower()
+
+    db = get_db()
+    years_rows = db.execute("SELECT DISTINCT year FROM questions WHERE exam = ? AND year IS NOT NULL ORDER BY year DESC", (exam,)).fetchall()
+    available_years = [int(r['year']) for r in years_rows if str(r['year']).isdigit()]
+
+    raw_years = request.args.getlist('year') + request.args.getlist('years')
+    selected_years = []
+    for y_val in raw_years:
+        for part in str(y_val).split(','):
+            part = part.strip()
+            if part.isdigit():
+                y_int = int(part)
+                if y_int in available_years and y_int not in selected_years:
+                    selected_years.append(y_int)
+    selected_years.sort(reverse=True)
+    subject = request.args.get('subject', '').strip().lower()
+
+    where_clauses = ["exam = ?"]
+    params = [exam]
+    if selected_years:
+        placeholders = ', '.join(['?'] * len(selected_years))
+        where_clauses.append(f"year IN ({placeholders})")
+        params.extend([str(y) for y in selected_years])
+    if subject:
+        where_clauses.append("subject = ?")
+        params.append(subject)
+
+    where_str = " AND ".join(where_clauses)
+    total_row = db.execute(f"SELECT COUNT(*) as c FROM questions WHERE {where_str}", params).fetchone()
+    total_filtered_questions = total_row['c'] if total_row else 0
+
+    chapter_rows = db.execute(f"""
+        SELECT chapter, chapter_name, subject, COUNT(*) as count
+        FROM questions
+        WHERE {where_str}
+        GROUP BY chapter, chapter_name, subject
+        ORDER BY count DESC
+    """, params).fetchall()
+
+    chapter_stats = []
+    for r in chapter_rows:
+        count = r['count']
+        pct = round((count / total_filtered_questions * 100), 1) if total_filtered_questions > 0 else 0
+        chapter_stats.append({
+            'chapter': r['chapter'],
+            'chapter_name': r['chapter_name'] or r['chapter'].replace('-', ' ').title(),
+            'subject': r['subject'],
+            'count': count,
+            'percentage': pct
+        })
+
+    # Subject distribution
+    sub_where = ["exam = ?"]
+    sub_params = [exam]
+    if selected_years:
+        placeholders = ', '.join(['?'] * len(selected_years))
+        sub_where.append(f"year IN ({placeholders})")
+        sub_params.extend([str(y) for y in selected_years])
+    sub_dist_rows = db.execute(f"""
+        SELECT subject, COUNT(*) as count
+        FROM questions
+        WHERE {" AND ".join(sub_where)}
+        GROUP BY subject
+        ORDER BY count DESC
+    """, sub_params).fetchall()
+    subject_dist = {r['subject']: r['count'] for r in sub_dist_rows}
+
+    # Year trends
+    yt_where = ["exam = ?"]
+    yt_params = [exam]
+    if subject:
+        yt_where.append("subject = ?")
+        yt_params.append(subject)
+    yt_rows = db.execute(f"""
+        SELECT year, COUNT(*) as count
+        FROM questions
+        WHERE {" AND ".join(yt_where)} AND year IS NOT NULL
+        GROUP BY year
+        ORDER BY year ASC
+    """, yt_params).fetchall()
+    year_trends = [{
+        'year': r['year'], 
+        'count': r['count'], 
+        'selected': (r['year'] in selected_years) if selected_years else True
+    } for r in yt_rows]
+
+    # Question types
+    type_rows = db.execute(f"""
+        SELECT type, COUNT(*) as count
+        FROM questions
+        WHERE {where_str} AND type IS NOT NULL
+        GROUP BY type
+        ORDER BY count DESC
+    """, params).fetchall()
+    type_dist = {r['type']: r['count'] for r in type_rows}
+
+    return jsonify({
+        'exam': exam,
+        'year': selected_years[0] if len(selected_years) == 1 else None,
+        'years': selected_years,
+        'subject': subject,
+        'total_questions': total_filtered_questions,
+        'top_chapter': chapter_stats[0] if chapter_stats else None,
+        'chapters': chapter_stats,
+        'subject_distribution': subject_dist,
+        'year_trends': year_trends,
+        'type_distribution': type_dist
     })
 
 def main():

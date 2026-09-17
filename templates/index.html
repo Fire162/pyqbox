@@ -1,48 +1,129 @@
 {% extends "base.html" %}
 
-{% block title %}PYQBox — Practise Previous Year Questions (JEE & NEET){% endblock %}
+{% block title %}Official JEE &amp; NEET PYQs, Shifts &amp; Chapterwise Solutions — Wegenz PYQBox{% endblock %}
+
+{% block meta_description %}The dedicated official previous year questions archive for JEE Main, JEE Advanced, and NEET UG. Browse 22,359+ authentic PYQs across 270 official papers &amp; shifts with year filters (2002–2026), chapter weightage analytics, and step-by-step KaTeX solutions.{% endblock %}
+
+{% block meta_keywords %}JEE Main PYQs, JEE Advanced PYQs, NEET PYQs, official previous year questions, JEE shift papers 2024 2025 2026, chapter weightage analytics, PYQBox, Wegenz{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
 
 {% block content %}
-<div class="portal-hero">
-  <h1 class="portal-title">PYQBox</h1>
-  <p class="portal-sub">Practise 22,359 competitive exam questions chapterwise, each with step-by-step worked solutions and local diagrams.</p>
+<!-- Wegenz Hero Section -->
+<section class="wegenz-hero-card">
+  <div class="wegenz-hero-content">
+    <div class="wegenz-hero-chip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+      <span>100% Official Previous Year Questions (PYQs)</span>
+    </div>
+    <h1 class="wegenz-hero-title">
+      Official JEE &amp; NEET PYQs &amp; Shift Archive<span class="dot-accent">.</span>
+    </h1>
+    <p class="wegenz-hero-desc">
+      The authoritative archive of 22,359 official competitive exam questions. Filter by exact exam shift, year (2002–2026), chapter, and subject with in-depth weightage analytics and step-by-step KaTeX solutions.
+    </p>
+    <div class="wegenz-hero-actions">
+      <a href="https://wegenz.in/" target="_blank" rel="noopener" class="btn-hero-primary" title="Practice sample questions and timed mock tests on Wegenz Practice">
+        <span>⚡ Practice Sample Questions &amp; Timed Mocks (Wegenz) &rarr;</span>
+      </a>
+      <a href="#exams-grid" class="btn-hero-secondary">
+        <span>Browse 270 Official Shifts &amp; Papers &darr;</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="wegenz-hero-badge-art">
+    <div class="glow-squircle">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="6"/>
+        <circle cx="12" cy="12" r="2"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- Exams Section -->
+<div id="exams-grid" style="margin-bottom: 12px;">
+  <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-indigo); margin-bottom: 6px;">
+    TARGET EXAMINATIONS
+  </div>
+  <h2 style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 18px 0; color: var(--ink);">
+    Select Exam Track &amp; Practice Mode
+  </h2>
 </div>
 
 <div class="exam-grid">
   <!-- JEE Main -->
-  <a href="/main/" class="exam-card">
-    <span class="exam-card-badge">Engineering</span>
-    <h2 class="exam-card-title">JEE Main</h2>
-    <p class="exam-card-desc">Comprehensive question bank for JEE Main covering Physics, Chemistry, and Mathematics from 2010 to 2026.</p>
-    <div class="exam-card-meta">
-      <span>14,436 Questions</span>
-      <span>89 Chapters · 2010–2026</span>
+  <div class="exam-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span class="exam-card-badge">Engineering</span>
+        <span style="font-size: 12px; font-weight: 700; color: var(--accent-indigo);">193 Papers</span>
+      </div>
+      <h3 class="exam-card-title"><a href="/main/" style="color: inherit; text-decoration: none;">JEE Main</a></h3>
+      <p class="exam-card-desc">Comprehensive question bank covering Physics, Chemistry, and Mathematics from 2010 to 2026.</p>
     </div>
-  </a>
+    <div style="margin-top: 14px;">
+      <div class="exam-card-meta">
+        <span>14,436 Questions</span>
+        <span>89 Chapters · 2010–2026</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/main/" class="btn-chip">📚 Chapters</a>
+        <a href="/main/papers/" class="btn-chip">📝 193 Shifts</a>
+        <a href="/main/analysis/" class="btn-chip">📊 Trends</a>
+      </div>
+    </div>
+  </div>
 
   <!-- JEE Advanced -->
-  <a href="/advanced/" class="exam-card">
-    <span class="exam-card-badge">Engineering</span>
-    <h2 class="exam-card-title">JEE Advanced</h2>
-    <p class="exam-card-desc">Challenging analytical and conceptual questions for JEE Advanced from 2006 to 2026 with full worked solutions.</p>
-    <div class="exam-card-meta">
-      <span>1,992 Questions</span>
-      <span>93 Chapters · 2006–2026</span>
+  <div class="exam-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span class="exam-card-badge">Engineering</span>
+        <span style="font-size: 12px; font-weight: 700; color: var(--accent-indigo);">41 Papers</span>
+      </div>
+      <h3 class="exam-card-title"><a href="/advanced/" style="color: inherit; text-decoration: none;">JEE Advanced</a></h3>
+      <p class="exam-card-desc">Challenging analytical and conceptual questions from 2006 to 2026 with full step-by-step worked solutions.</p>
     </div>
-  </a>
+    <div style="margin-top: 14px;">
+      <div class="exam-card-meta">
+        <span>1,992 Questions</span>
+        <span>93 Chapters · 2006–2026</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/advanced/" class="btn-chip">📚 Chapters</a>
+        <a href="/advanced/papers/" class="btn-chip">📝 41 Papers</a>
+        <a href="/advanced/analysis/" class="btn-chip">📊 Trends</a>
+      </div>
+    </div>
+  </div>
 
   <!-- NEET UG -->
-  <a href="/neet/" class="exam-card">
-    <span class="exam-card-badge">Medical</span>
-    <h2 class="exam-card-title">NEET UG</h2>
-    <p class="exam-card-desc">Complete medical entrance question bank covering Physics, Chemistry, Botany, and Zoology with anatomical diagrams.</p>
-    <div class="exam-card-meta">
-      <span>5,931 Questions</span>
-      <span>88 Chapters · 2002–2026</span>
+  <div class="exam-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span class="exam-card-badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.2);">Medical</span>
+        <span style="font-size: 12px; font-weight: 700; color: #10b981;">36 Papers</span>
+      </div>
+      <h3 class="exam-card-title"><a href="/neet/" style="color: inherit; text-decoration: none;">NEET UG</a></h3>
+      <p class="exam-card-desc">Complete medical entrance question bank covering Physics, Chemistry, Botany, and Zoology.</p>
     </div>
-  </a>
+    <div style="margin-top: 14px;">
+      <div class="exam-card-meta">
+        <span>5,931 Questions</span>
+        <span>88 Chapters · 2002–2026</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/neet/" class="btn-chip">📚 Chapters</a>
+        <a href="/neet/papers/" class="btn-chip">📝 36 Papers</a>
+        <a href="/neet/analysis/" class="btn-chip">📊 Trends</a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

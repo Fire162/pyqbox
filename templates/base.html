@@ -4,10 +4,70 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>{% block title %}PYQBox — Practise Previous Year Questions{% endblock %}</title>
-  <link rel="stylesheet" href="/static/katex/katex.min.css">
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="stylesheet" href="/static/custom.css">
+  <title>{% block title %}PYQBox — Practise Previous Year Questions (JEE & NEET){% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Free authentic chapterwise previous year questions (PYQs) for JEE Main, JEE Advanced, and NEET UG. Browse 22,359+ questions, 270 official papers, multi-year weightage analytics, and step-by-step KaTeX solutions.{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}JEE Main PYQs, JEE Advanced previous year questions, NEET PYQs, chapterwise questions, official JEE shift papers, PYQBox, Wegenz{% endblock %}">
+  <meta name="author" content="Wegenz">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="{% block canonical_url %}https://pyqs.wegenz.in{{ request.path }}{% endblock %}">
+
+  <!-- Open Graph / Social Media Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PYQBox | Wegenz">
+  <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+  <meta property="og:url" content="https://pyqs.wegenz.in{{ request.path }}">
+  <meta property="og:image" content="https://wegenz.in/wegenz-wordmark.jpg">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{{ self.meta_description() }}{% endblock %}">
+  <meta name="twitter:image" content="https://wegenz.in/wegenz-wordmark.jpg">
+
+  <!-- JSON-LD Structured Data -->
+  {% block structured_data %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://pyqs.wegenz.in/#website",
+        "name": "PYQBox — Authentic JEE & NEET Previous Year Questions Archive",
+        "url": "https://pyqs.wegenz.in/",
+        "description": "22,359+ authentic chapterwise previous year questions, 270 official exam papers & shift analytics for JEE Main, JEE Advanced, and NEET UG.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://pyqs.wegenz.in/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "EducationalOrganization",
+        "@id": "https://wegenz.in/#organization",
+        "name": "Wegenz",
+        "url": "https://wegenz.in/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://wegenz.in/wegenz-primary-mark.jpg"
+        }
+      }
+    ]
+  }
+  </script>
+  {% endblock %}
+
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="apple-touch-icon" href="/static/wegenz-primary-mark-192.webp">
+
+  <link rel="stylesheet" href="/static/katex/katex.min.css?v=5">
+  <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="/static/custom.css?v=5">
   <script>
     (function() {
       var t = localStorage.getItem('pq_theme');
@@ -24,9 +84,12 @@
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sb-top">
-      <a class="sb-brand" href="/">
-        <span class="mark">PQ</span>
-        <span class="name">PYQBox</span>
+      <a class="sb-brand" href="/" title="Wegenz PYQBox">
+        <img src="/static/wegenz-primary-mark-96.webp" alt="Wegenz Logo" class="sb-logo-img" width="34" height="34">
+        <div class="sb-brand-text">
+          <span class="sb-brand-name">Wegenz</span>
+          <span class="sb-brand-sub">PYQBox</span>
+        </div>
       </a>
       <button type="button" class="sb-toggle" id="sb-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
         <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -64,14 +127,26 @@
 
     {% if current_exam %}
     <div class="sb-section">
-      <div class="sb-section-title">PRACTICE MODE</div>
-      <a class="sb-link {% if not is_paper_view %}is-active{% endif %}" href="/{{ current_exam }}/">
+      <div class="sb-section-title">PRACTICE & RESEARCH</div>
+      <a class="sb-link {% if not is_paper_view and not is_analysis_view %}is-active{% endif %}" href="/{{ current_exam }}/">
         <span class="sb-icon">📚</span>
         <span class="sb-text">Chapter-wise</span>
       </a>
       <a class="sb-link {% if is_paper_view %}is-active{% endif %}" href="/{{ current_exam }}/papers/">
         <span class="sb-icon">📝</span>
         <span class="sb-text">Paper & Shift-wise</span>
+      </a>
+      <a class="sb-link {% if is_analysis_view %}is-active{% endif %}" href="/{{ current_exam }}/analysis/">
+        <span class="sb-icon">📊</span>
+        <span class="sb-text">Analysis & Trends</span>
+      </a>
+    </div>
+    {% else %}
+    <div class="sb-section">
+      <div class="sb-section-title">INSIGHTS</div>
+      <a class="sb-link" href="/main/analysis/">
+        <span class="sb-icon">📊</span>
+        <span class="sb-text">Research & Weightage</span>
       </a>
     </div>
     {% endif %}
@@ -87,6 +162,15 @@
       {% endfor %}
     </div>
     {% endif %}
+
+    <div class="sb-section" style="margin-top:auto; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle, #e2e8f0);">
+      <div class="sb-section-title">SAMPLE QUESTIONS & MOCKS</div>
+      <a class="sb-link" href="https://wegenz.in/" target="_blank" rel="noopener" title="Wegenz Practice Engine: 170k+ Sample Questions, Challenge Codes & Timed Mocks">
+        <span class="sb-icon">⚡</span>
+        <span class="sb-text">Wegenz Practice</span>
+        <span class="sb-badge" style="background:#4f46e5;color:#fff;font-weight:700;">MOCKS</span>
+      </a>
+    </div>
 
     <div class="sb-footer">
       <button type="button" class="theme-btn" id="theme-toggle" title="Toggle Dark/Light Mode">
@@ -118,6 +202,15 @@
         </div>
       </div>
       <div class="topbar-right">
+        <div class="status-pill" title="All systems operational">
+          <span class="status-dot-wrapper">
+            <span class="status-dot"></span>
+          </span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;">All Systems Operational</span>
+        </div>
+        <a href="https://wegenz.in/" target="_blank" rel="noopener" class="topbar-cbt-link" title="Wegenz: 170k+ Sample Questions, Infinite Practice & CBT Mock Simulator">
+          <span>⚡ Sample Questions & Mocks (Wegenz)</span>
+        </a>
         {% block topbar_actions %}{% endblock %}
       </div>
     </header>
@@ -128,8 +221,8 @@
   </div>
 </div>
 
-<script src="/static/katex/katex.min.js"></script>
-<script src="/static/katex/auto-render.min.js" onload="typeof window.renderAllMath==='function'&&window.renderAllMath()"></script>
-<script src="/static/app.js"></script>
+<script src="/static/katex/katex.min.js?v=5"></script>
+<script src="/static/katex/auto-render.min.js?v=5" onload="typeof window.renderAllMath==='function'&&window.renderAllMath()"></script>
+<script src="/static/app.js?v=5"></script>
 </body>
 </html>

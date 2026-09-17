@@ -67,12 +67,13 @@ def fetch_clean_options_from_paper(paper):
                     key_el = opt.find(class_='opt-key')
                     key = key_el.get_text(strip=True) if key_el else opt.get('data-opt', '')
                     div = opt.find('div') or opt
+                    opt_html = div.decode_contents().strip()
                     for k in div.find_all(class_='katex'):
                         ann = k.find('annotation')
                         if ann and ann.get_text():
                             k.replace_with(f"\\({ann.get_text().strip()}\\)")
                     text = div.get_text(separator=' ', strip=True)
-                    opts.append({'option': key, 'text': text})
+                    opts.append({'option': key, 'text': text, 'html': opt_html})
                 results[q_id] = opts
     except Exception as e:
         print(f"Error fetching {mock_url}: {e}")

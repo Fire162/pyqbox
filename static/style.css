@@ -20,109 +20,81 @@
 
 /* ---------------------------------------------------------------- tokens -- */
 :root{
-  /* Warm neutrals â Notion's canvas/surface/hairline, not blue-grey slate. */
-  --canvas:#ffffff;
-  --surface:#f7f6f3;
-  --surface-2:#f1f0ed;
-  --hairline:#e9e8e4;
-  --hairline-strong:#dcdad4;
+  /* Wegenz Slate Light Theme */
+  --canvas:#f8fafc;
+  --surface:#ffffff;
+  --surface-2:#f1f5f9;
+  --hairline:#e2e8f0;
+  --hairline-strong:#cbd5e1;
 
-  /* Notion's own muted greys are lighter than this (#787671, #a4a097) and do
-     not clear 4.5:1 â a known criticism of it. Both tiers here are measured
-     against all three light grounds, worst case 4.55:1 on surface-2. */
-  --ink:#37352f;          /* Notion charcoal â body text */
-  --ink-2:#5f5d57;        /* secondary  â 5.78 worst case */
-  --ink-3:#6f6d65;        /* muted      â 4.55 worst case */
+  --ink:#0f172a;          /* Slate-900 â€” body text */
+  --ink-2:#475569;        /* Slate-600 secondary */
+  --ink-3:#64748b;        /* Slate-500 muted */
 
-  /* The one accent. --accent fills; --accent-ink is text-safe on canvas. */
-  --accent:#00b894;
-  --accent-ink:#0a7a63;
-  --accent-wash:#eaf8f4;
+  /* Wegenz Primary Accent: Indigo */
+  --accent:#4f46e5;
+  --accent-ink:#4338ca;
+  --accent-wash:#eef2ff;
 
-  --blue:#0075de;--blue-ink:#0060b8;--blue-wash:#eaf3fc;
-  --green:#1aae39;--green-ink:#157f2c;--green-wash:#e9f7ec;
-  --red:#e03131;--red-ink:#b32626;--red-wash:#fdecec;
-  --amber:#dd8500;--amber-ink:#8a5300;--amber-wash:#fdf3e3;
-  /* Marked for review, and nothing else. The real exam screens use purple for
-     it and candidates read that square by colour long before they read the
-     legend, so this is the one place the palette copies rather than chooses.
-     --purple-on is the ink that goes ON the fill: white clears 5.9:1 on the
-     light purple but only 3.1 on the lighter dark-theme one, so unlike green
-     and red â whose fills are close enough in both themes for one hardcoded
-     ink â this pair has to flip. */
-  --purple:#7048e8;--purple-ink:#5a35c9;--purple-wash:#f0ebfd;--purple-on:#ffffff;
+  --blue:#2563eb;--blue-ink:#1d4ed8;--blue-wash:#eff6ff;
+  --green:#16a34a;--green-ink:#15803d;--green-wash:#f0fdf4;
+  --red:#dc2626;--red-ink:#b91c1c;--red-wash:#fef2f2;
+  --amber:#d97706;--amber-ink:#b45309;--amber-wash:#fffbeb;
+  --purple:#7c3aed;--purple-ink:#6d28d9;--purple-wash:#f5f3ff;--purple-on:#ffffff;
 
-  --radius-xs:3px;--radius-sm:4px;--radius:6px;--radius-lg:8px;
-  --shadow-pop:0 4px 12px rgba(15,15,15,.08);
+  --radius-xs:6px;--radius-sm:8px;--radius:12px;--radius-lg:16px;--radius-xl:24px;--radius-pill:9999px;
+  --shadow-pop:0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
 
-  --sidebar-w:248px;
+  --sidebar-w:260px;
 
-  /* What the BROWSER paints, as opposed to what we paint: scrollbars, the
-     canvas behind the page, and every native control â the file input on
-     /progress/, the search field's clear button, checkboxes, focus rings.
-     Set it and they follow the theme; leave it and they follow the OS.
-     `<meta name="color-scheme" content="light dark">` in the head says this
-     page does both, which is right before the stylesheet arrives and wrong
-     afterwards: it hands the choice to the OS, and the OS does not know the
-     reader pinned Light. A dark desktop then put a dark scrollbar down the
-     side of a white page â visible on every table that scrolls, the chapter
-     stats block most of all.
-     So it is declared here, in all three theme states, exactly parallel to
-     the tokens above, and the property beats the meta wherever they differ. */
   color-scheme: light;
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
-  --canvas:#191919;
-  --surface:#202020;
-  --surface-2:#2a2a2a;
-  --hairline:#2f2f2f;
-  --hairline-strong:#3d3d3d;
+  /* Wegenz Obsidian Space Slate Dark Theme */
+  --canvas:#020617;
+  --surface:#0f172a;
+  --surface-2:#1e293b;
+  --hairline:#1e293b;
+  --hairline-strong:#334155;
 
-  /* ink-3 measured against all three dark grounds â canvas #191919, sidebar
-     surface #202020 and surface-2 #2a2a2a â worst case 4.73:1. Notion's own
-     #83817c fails at 4.19 on the sidebar, where most of the muted text is. */
-  --ink:#d4d4d4;
-  --ink-2:#adaba6;
-  --ink-3:#96948e;
+  --ink:#f8fafc;
+  --ink-2:#cbd5e1;
+  --ink-3:#94a3b8;
 
-  --accent:#00d4aa;--accent-ink:#2fd9b4;--accent-wash:rgba(0,212,170,.12);
+  --accent:#6366f1;--accent-ink:#818cf8;--accent-wash:rgba(99,102,241,.14);
 
-  --blue:#4a9eff;--blue-ink:#6cb2ff;--blue-wash:rgba(74,158,255,.13);
-  --green:#4ac26b;--green-ink:#5fd07e;--green-wash:rgba(74,194,107,.13);
-  --red:#ff6b6b;--red-ink:#ff8585;--red-wash:rgba(255,107,107,.13);
-  --amber:#e5a13a;--amber-ink:#f0b657;--amber-wash:rgba(229,161,58,.13);
-  --purple:#9775fa;--purple-ink:#b197fc;--purple-wash:rgba(151,117,250,.15);--purple-on:#1a0f38;
+  --blue:#38bdf8;--blue-ink:#7dd3fc;--blue-wash:rgba(56,189,248,.14);
+  --green:#4ade80;--green-ink:#86efac;--green-wash:rgba(74,222,128,.14);
+  --red:#f87171;--red-ink:#fca5a5;--red-wash:rgba(248,113,113,.14);
+  --amber:#fbbf24;--amber-ink:#fcd34d;--amber-wash:rgba(251,191,36,.14);
+  --purple:#a78bfa;--purple-ink:#c4b5fd;--purple-wash:rgba(167,139,250,.15);--purple-on:#1a0f38;
 
-  --shadow-pop:0 4px 12px rgba(0,0,0,.5);
+  --shadow-pop:0 20px 25px -5px rgba(0,0,0,.6), 0 8px 10px -6px rgba(0,0,0,.6);
 
   color-scheme: dark;
 }}
 
-/* The same dark palette again, this time for an explicit choice rather than an
-   OS preference. Three states: no attribute follows the OS, [data-theme=light]
-   pins light (and is excluded from the media query above), [data-theme=dark]
-   pins dark even when the OS asks for light. Duplicated on purpose â a token
-   defined only inside a media query cannot be reached by the toggle. */
 :root[data-theme=dark]{
-  --canvas:#191919;
-  --surface:#202020;
-  --surface-2:#2a2a2a;
-  --hairline:#2f2f2f;
-  --hairline-strong:#3d3d3d;
+  /* Wegenz Obsidian Space Slate Dark Theme */
+  --canvas:#020617;
+  --surface:#0f172a;
+  --surface-2:#1e293b;
+  --hairline:#1e293b;
+  --hairline-strong:#334155;
 
-  --ink:#d4d4d4;
-  --ink-2:#adaba6;
-  --ink-3:#96948e;
+  --ink:#f8fafc;
+  --ink-2:#cbd5e1;
+  --ink-3:#94a3b8;
 
-  --accent:#00d4aa;--accent-ink:#2fd9b4;--accent-wash:rgba(0,212,170,.12);
+  --accent:#6366f1;--accent-ink:#818cf8;--accent-wash:rgba(99,102,241,.14);
 
-  --blue:#4a9eff;--blue-ink:#6cb2ff;--blue-wash:rgba(74,158,255,.13);
-  --green:#4ac26b;--green-ink:#5fd07e;--green-wash:rgba(74,194,107,.13);
-  --red:#ff6b6b;--red-ink:#ff8585;--red-wash:rgba(255,107,107,.13);
-  --amber:#e5a13a;--amber-ink:#f0b657;--amber-wash:rgba(229,161,58,.13);
-  --purple:#9775fa;--purple-ink:#b197fc;--purple-wash:rgba(151,117,250,.15);--purple-on:#1a0f38;
+  --blue:#38bdf8;--blue-ink:#7dd3fc;--blue-wash:rgba(56,189,248,.14);
+  --green:#4ade80;--green-ink:#86efac;--green-wash:rgba(74,222,128,.14);
+  --red:#f87171;--red-ink:#fca5a5;--red-wash:rgba(248,113,113,.14);
+  --amber:#fbbf24;--amber-ink:#fcd34d;--amber-wash:rgba(251,191,36,.14);
+  --purple:#a78bfa;--purple-ink:#c4b5fd;--purple-wash:rgba(167,139,250,.15);--purple-on:#1a0f38;
 
-  --shadow-pop:0 4px 12px rgba(0,0,0,.5);
+  --shadow-pop:0 20px 25px -5px rgba(0,0,0,.6), 0 8px 10px -6px rgba(0,0,0,.6);
 
   color-scheme: dark;
 }
