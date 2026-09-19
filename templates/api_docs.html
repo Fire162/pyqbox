@@ -24,7 +24,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/exams</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns all available exams, total question counts, subjects, and available years.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s http://localhost:5050/api/v1/exams
       </div>
     </div>
@@ -36,7 +36,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/chapters?exam=main&subject=physics</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns chapters filtered by exam and subject with question counts.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s "http://localhost:5050/api/v1/chapters?exam=main&subject=physics"
       </div>
     </div>
@@ -48,7 +48,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/papers?exam=main&year=2026</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns all 270 official papers & shifts with question counts and slugs.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s "http://localhost:5050/api/v1/papers?exam=main&year=2026"
       </div>
     </div>
@@ -62,7 +62,7 @@
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
         Paginated questions with sorting (<code>sort=year_desc</code> / <code>sort=year_asc</code>) and filters (<code>year</code>, <code>shift</code>, <code>paper</code>, <code>type</code>).
       </p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s "http://localhost:5050/api/v1/questions?exam=main&year=2026&sort=year_desc&limit=5"
       </div>
     </div>
@@ -74,7 +74,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/questions/:id</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Returns full question payload including clean LaTeX options, diagrams, correct answer, and worked solution.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s "http://localhost:5050/api/v1/questions/0928dd2e-7799-4199-8e1c-1e07132db37e"
       </div>
     </div>
@@ -86,7 +86,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/check-answer</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Verifies student option or numerical answer against correct key and returns worked solution.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -X POST http://localhost:5050/api/v1/check-answer -H "Content-Type: application/json" -d '{"question_id": "0928dd2e-7799-4199-8e1c-1e07132db37e", "selected_answer": "A"}'
       </div>
     </div>
@@ -98,7 +98,7 @@
         <code style="font-size: 15px; font-weight: 600;">/api/v1/search?q=inductance</code>
       </div>
       <p style="color: #666; font-size: 14px; margin-bottom: 12px;">FTS5 indexed search querying across 22,359 questions in &lt;10ms.</p>
-      <div style="background: var(--hairline); padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;">
+      <div class="api-curl-box">
         curl -s "http://localhost:5050/api/v1/search?q=capacitor"
       </div>
     </div>
