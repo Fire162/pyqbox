@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-09-19 22:48 IST
+
+### Fixed
+* Fixed horizontal overflows and viewport clipping across mobile (320px–480px), tablet (768px–850px), laptop, and desktop ([#3](https://github.com/Fire162/pyqbox/issues/3)).
+* Replaced hardcoded 480px minimum chart grid on the Analysis page with responsive `.analysis-charts-grid`.
+* Added responsive topbar labels with mobile abbreviation for CBT link and dot-only status pill below 640px.
+* Added word-wrapping and container overflow protection for API curl samples (`.api-curl-box`).
+* Made navigation buttons (`.pnav`), mode switcher tabs (`.tabs`), and exam grids gracefully scale and wrap on small viewports.
+* Verified 0px overflow across 81 automated tests with Playwright.
+
 ## [1.9.0] - 2026-09-19 22:36 IST
 
 ### Fixed
