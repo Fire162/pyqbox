@@ -51,17 +51,67 @@ document.addEventListener('DOMContentLoaded', function() {
   // 2. Mobile / Desktop Sidebar Toggle
   const sbToggle = document.getElementById('sb-toggle');
   const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const sbCloseBtn = document.getElementById('sb-close-btn');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
   const sidebar = document.getElementById('sidebar');
+
+  function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.add('is-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('is-open');
+    document.body.classList.add('sidebar-locked');
+  }
+
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('is-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('is-open');
+    document.body.classList.remove('sidebar-locked');
+  }
+
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (sidebar && sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (sbCloseBtn) {
+    sbCloseBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeSidebar();
+    });
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', function() {
+      closeSidebar();
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('is-open')) {
+      closeSidebar();
+    }
+  });
+
+  if (sidebar) {
+    sidebar.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 900) {
+          closeSidebar();
+        }
+      });
+    });
+  }
 
   if (sbToggle && sidebar) {
     sbToggle.addEventListener('click', function() {
       sidebar.classList.toggle('is-collapsed');
-    });
-  }
-
-  if (mobileMenuBtn && sidebar) {
-    mobileMenuBtn.addEventListener('click', function() {
-      sidebar.classList.toggle('is-open');
     });
   }
 
