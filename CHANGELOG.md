@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-09-19 22:58 IST
+
+### Fixed
+* Removed persistent fixed bottom overlay navigation bar on mobile viewports (<900px) that was obscuring question and worked solution content ([#5](https://github.com/Fire162/pyqbox/issues/5)).
+* Restored question navigation (`.pnav`) to natural document flow (`position: static`) directly below solutions with a touch-friendly 2-column mobile grid layout.
+* Fixed KaTeX match tables and multi-column array formulas (`\begin{array}`) getting clipped on narrow screens by enabling horizontal swipe scroll (`overflow-x: auto`) on `.q-title`, `.soln-body`, and `.katex:has(.mtable)`.
+* Bumped asset cache-busting version query string to `v=8`.
+
 ## [1.10.0] - 2026-09-19 22:48 IST
 
 ### Fixed

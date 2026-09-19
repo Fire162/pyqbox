@@ -122,27 +122,27 @@
   </article>
 
   <!-- Navigation Buttons (Prev / Next) -->
-  <div class="pnav" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 32px 0; padding-top: 20px; border-top: 1px solid var(--hairline);">
+  <nav class="pnav" aria-label="Question navigation">
     {% if prev_url %}
-      <a class="btn" href="{{ prev_url }}" style="padding: 9px 18px; border: 1px solid var(--hairline); border-radius: 10px; text-decoration: none; color: inherit; font-size: 13px; font-weight: 600; background: var(--surface);">
+      <a class="btn pnav-prev" href="{{ prev_url }}">
         ← Previous (Q{{ current_index - 1 }})
       </a>
     {% else %}
-      <div></div>
+      <span class="pnav-placeholder"></span>
     {% endif %}
 
-    <a class="btn" href="{{ list_url if list_url else '/' ~ current_exam ~ '/' ~ current_subject ~ '/' ~ current_chapter ~ '/' }}" style="padding: 9px 18px; border: 1px solid var(--hairline); border-radius: 10px; text-decoration: none; color: inherit; font-size: 13px; font-weight: 600; background: var(--surface);">
+    <a class="btn pnav-list" href="{{ list_url if list_url else '/' ~ current_exam ~ '/' ~ current_subject ~ '/' ~ current_chapter ~ '/' }}">
       {{ list_title if list_title else 'All ' ~ chapter_name }} ({{ total_questions }})
     </a>
 
     {% if next_url %}
-      <a class="btn primary" href="{{ next_url }}" style="padding: 9px 20px; background: #4f46e5; color: #fff; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px rgba(79,70,229,0.35);">
+      <a class="btn primary pnav-next" href="{{ next_url }}">
         Next (Q{{ current_index + 1 }}) →
       </a>
     {% else %}
-      <div></div>
+      <span class="pnav-placeholder"></span>
     {% endif %}
-  </div>
+  </nav>
 </div>
 
 <script>

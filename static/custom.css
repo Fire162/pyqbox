@@ -1113,7 +1113,40 @@ html, body {
   padding: 4px 0;
 }
 
-.q-title, .soln-body, .search-card-question, .q-card {
+.q-title {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink);
+  margin-bottom: 24px;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.soln-body {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Ensure wide KaTeX array/match tables scroll smoothly on mobile */
+.q-title .katex, .soln-body .katex {
+  max-width: 100%;
+}
+
+.q-title .katex:has(.mtable), .soln-body .katex:has(.mtable),
+.q-title .mtable, .soln-body .mtable {
+  display: inline-block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  vertical-align: middle;
+}
+
+.search-card-question, .q-card {
   overflow-wrap: break-word;
   word-break: break-word;
   max-width: 100%;
@@ -1130,6 +1163,71 @@ html, body {
   box-sizing: border-box;
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+/* Question Navigation Buttons in Flow (Never as a Fixed Bottom Bar) */
+.content {
+  min-width: 0;
+  max-width: 100%;
+  padding-bottom: 32px !important;
+}
+
+.pnav, .pnav:not(.ppages) {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 1 !important;
+  margin: 28px 0 16px !important;
+  padding: 18px 0 0 !important;
+  border-top: 1px solid var(--hairline) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+}
+
+.pnav .pnav-placeholder {
+  display: inline-block;
+  width: 0;
+  visibility: hidden;
+}
+
+.pnav .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--ink);
+  transition: all 0.15s ease;
+  height: auto !important;
+  flex: none;
+}
+
+.pnav .btn.primary {
+  background: #4f46e5;
+  color: #ffffff !important;
+  border-color: #4f46e5;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.pnav .btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.pnav .btn.primary:hover {
+  background: #4338ca;
+  color: #ffffff !important;
 }
 
 /* Analysis Charts Responsive Grid */
@@ -1305,19 +1403,39 @@ html, body {
     gap: 8px !important;
   }
 
-  .pnav {
-    flex-direction: column;
-    gap: 8px !important;
+  .pnav, .pnav:not(.ppages) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin: 20px 0 !important;
+    padding-top: 14px !important;
   }
 
   .pnav .btn {
-    width: 100%;
-    text-align: center;
-    box-sizing: border-box;
+    width: 100% !important;
+    padding: 11px 12px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
   }
 
-  .pnav div {
-    display: none;
+  .pnav .pnav-prev {
+    grid-column: 1;
+    order: 1;
+  }
+
+  .pnav .pnav-next {
+    grid-column: 2;
+    order: 2;
+  }
+
+  .pnav .pnav-list {
+    grid-column: 1 / -1;
+    order: 3;
+    padding: 11px 14px !important;
+  }
+
+  .pnav .pnav-placeholder {
+    display: none !important;
   }
 
   .q-card {
