@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-09-19 23:05 IST
+
+### Changed
+* Removed subject chapter list (`.sb-chapters-scroll`) from the mobile hamburger menu drawer below 900px ([#7](https://github.com/Fire162/pyqbox/issues/7)).
+* Streamlined the mobile drawer navigation to focus on Exams, Practice modes, and Wegenz Practice Mocks without extensive vertical scrolling.
+* Bumped asset cache-busting query string to `v=9`.
+
 ## [1.11.0] - 2026-09-19 22:58 IST
 
 ### Fixed
