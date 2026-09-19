@@ -1293,6 +1293,11 @@ html, body {
     width: 100% !important;
   }
 
+  /* Keep mobile hamburger drawer compact: hide long subject chapter list */
+  .sidebar .sb-section.sb-chapters-scroll {
+    display: none !important;
+  }
+
   .sidebar .sb-brand .sb-brand-sub {
     display: block !important;
   }
