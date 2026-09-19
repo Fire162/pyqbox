@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-09-19 22:36 IST
+
+### Fixed
+* Fixed empty mobile sidebar drawer when clicking the hamburger button on screens below 900px by overriding legacy `.sb-section { display: none }` rule ([#1](https://github.com/Fire162/pyqbox/issues/1), [#2](https://github.com/Fire162/pyqbox/pull/2)).
+* Added a backdrop overlay (`.sidebar-backdrop`) with tap-to-dismiss behavior.
+* Added a dedicated close (`✕`) button and `Escape` key handler to dismiss the drawer.
+* Fixed body scrolling when the mobile drawer is open.
+
 ## [1.8.0] - 2026-09-17 22:15 IST
 
 ### Added
